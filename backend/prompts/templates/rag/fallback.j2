@@ -1,0 +1,59 @@
+{#
+   rag/fallback.j2
+   Response when retrieval confidence is too low to give a
+   reliable commercial crop disease diagnosis.
+
+   UPDATED: Now references commercial crops specifically and
+   gives Uganda-relevant advice for when to seek help.
+
+   Variables:
+   - confidence_score: float
+   - threshold: float
+   - personality: communication style
+#}
+
+The retrieval confidence for this commercial crop image was
+{{ confidence_score | round(2) }}, which is below our minimum
+threshold of {{ threshold }}.
+
+{% if personality == "friendly" %}
+I was not able to find a confident enough match in our commercial
+crop disease database to give you a reliable diagnosis this time.
+
+This does not mean your crop has a serious problem — it may simply
+mean the photo needs to be clearer or taken from a different angle.
+
+Here is what I recommend:
+
+1. Retake the photo in good natural daylight
+2. Get closer to the most affected leaf or area
+3. Make sure the affected part fills the photo clearly
+4. Try selecting the correct crop type from the list
+
+If you are still worried about your crop, please:
+- Contact your nearest agricultural extension officer
+- Visit your local agro-vet for advice
+- Call the Uganda National Agricultural Advisory Services (NAADS)
+- Bring a fresh sample of the affected plant to an agrochemical shop
+
+Your crop and your harvest matter — don't hesitate to get help! 🌾
+
+{% elif personality == "formal" %}
+Insufficient retrieval confidence to generate a reliable diagnosis
+for this commercial crop sample.
+
+Confidence score: {{ confidence_score | round(2) }}
+Minimum required: {{ threshold }}
+
+Recommended actions:
+1. Resubmit with a higher resolution image of the affected area
+2. Ensure affected leaf tissue is clearly in frame without shadow
+3. Specify the exact commercial crop type for better search precision
+4. Consult a certified agronomist or extension worker for field inspection
+
+{% elif personality == "concise" %}
+Low confidence: {{ confidence_score | round(2) }} / {{ threshold }}.
+
+Retake photo in good lighting.
+Or contact your local extension officer for field diagnosis.
+{% endif %}

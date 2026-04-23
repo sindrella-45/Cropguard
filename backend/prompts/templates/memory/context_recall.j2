@@ -1,0 +1,39 @@
+{#
+   context_recall.j2
+   Injects relevant past diagnosis history into
+   the current session for personalised responses.
+   
+   Variables:
+   - past_diagnoses: list of past diagnosis dicts
+   - farmer_name: optional string
+#}
+
+{% if past_diagnoses %}
+This farmer has the following relevant diagnosis history:
+
+{% for diagnosis in past_diagnoses %}
+{{ loop.index }}. Date: {{ diagnosis.date }}
+   Plant: {{ diagnosis.plant_identified }}
+   Disease: {{ diagnosis.diagnosis_name }}
+   Severity: {{ diagnosis.severity }}
+   {% if diagnosis.treatment_summary %}
+   Treatment: {{ diagnosis.treatment_summary }}
+   {% endif %}
+
+{% endfor %}
+
+Use this history to:
+- Note if the same disease is recurring
+- Observe whether the condition is improving
+  or getting worse over time
+- Reference previous treatments that may 
+  have succeeded or failed
+- Provide more personalised advice based on
+  this farmer's specific situation
+
+{% else %}
+This is the farmer's first diagnosis session.
+No previous history is available.
+Provide general advice appropriate for a 
+first-time user of the application.
+{% endif %}

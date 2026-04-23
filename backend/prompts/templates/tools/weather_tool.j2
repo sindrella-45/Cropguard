@@ -1,0 +1,43 @@
+{#
+   weather_tool.j2
+   Prompt for the weather tool node.
+   Instructs the agent how to use weather data
+   to enrich its crop disease diagnosis.
+   
+   Variables:
+   - location: string location name
+   - weather_data: dict with weather details
+#}
+
+Weather data has been retrieved for: {{ location }}
+
+Current conditions:
+- Temperature: {{ weather_data.temperature }}°C
+- Humidity: {{ weather_data.humidity }}%
+- Wind speed: {{ weather_data.wind_speed }} km/h
+- Rainfall last 7 days: {{ weather_data.rainfall }}mm
+- Weather condition: {{ weather_data.description }}
+
+Use this data to enrich your diagnosis:
+
+{% if weather_data.humidity > 80 %}
+⚠️ High humidity alert:
+Conditions are highly favourable for fungal diseases
+such as blight, mildew and leaf spot infections.
+Increase suspicion of fungal disease causes.
+{% endif %}
+
+{% if weather_data.temperature > 35 %}
+⚠️ Heat stress alert:
+Temperatures above 35°C can cause heat stress symptoms
+that mimic disease. Consider heat stress as a factor.
+{% endif %}
+
+{% if weather_data.rainfall > 50 %}
+⚠️ High rainfall alert:
+Excessive moisture increases bacterial disease risk
+and can cause root rot symptoms in leaves.
+{% endif %}
+
+Factor these conditions into your diagnosis and
+mention relevant weather risks in your response.

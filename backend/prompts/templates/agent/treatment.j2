@@ -1,0 +1,107 @@
+{#
+   treatment.j2 — category-constrained treatment generation.
+
+   KEY FIX: disease_category is now passed in so the model
+   cannot recommend fungicides for bacterial diseases, or
+   chemical sprays for viral infections.
+#}
+
+Generate treatment recommendations for:
+
+Plant:    {{ plant_identified }}
+Disease:  {{ diagnosis.name if diagnosis else "Unknown" }}
+Category: {{ disease_category | default("unknown") }}
+Severity: {{ diagnosis.severity if diagnosis else "unknown" }}
+
+{% if retrieved_context %}
+VERIFIED TREATMENT INFORMATION from knowledge base:
+{% for chunk in retrieved_context %}
+[Source: {{ chunk.document_name }} | Relevance: {{ chunk.similarity_score }}]
+{{ chunk.chunk_text }}
+{% endfor %}
+{% endif %}
+
+{% if weather_data %}
+Current conditions:
+- Temperature: {{ weather_data.temperature }}°C
+- Humidity: {{ weather_data.humidity }}%
+{% if weather_data.humidity > 80 %}
+⚠ High humidity — prioritise reducing moisture around plants.
+{% endif %}
+{% if weather_data.temperature > 35 %}
+⚠ High temperature — apply treatments early morning or evening only.
+{% endif %}
+{% endif %}
+
+{% if differential_diagnoses and differential_diagnoses|length > 1 %}
+Alternative diagnoses to keep in mind:
+{% for d in differential_diagnoses[1:] %}
+- {{ d.name }} ({{ d.probability }}% probability) — {{ d.category }}
+{% endfor %}
+{% endif %}
+
+━━━ STRICT CATEGORY RULES (MUST FOLLOW) ━━━
+
+{% if disease_category == "bacterial" %}
+BACTERIAL DISEASE RULES:
+✓ Use: copper-based bactericide (copper hydroxide, copper oxychloride)
+✓ Use: Remove and DESTROY infected material — do not compost
+✓ Use: Disinfect tools with bleach solution between plants
+✓ Use: Avoid overhead irrigation — bacteria spread in water splash
+✗ DO NOT recommend: fungicides (they do not work on bacteria)
+✗ DO NOT recommend: neem oil as the primary treatment for bacteria
+{% elif disease_category == "fungal" %}
+FUNGAL DISEASE RULES:
+✓ Use: Appropriate fungicide for this specific fungus
+✓ Use: Improve air circulation to reduce humidity
+✓ Use: Remove infected leaves and destroy them
+✓ Use: Preventive fungicide rotation to avoid resistance
+✗ DO NOT recommend: bactericides
+{% elif disease_category == "viral" %}
+VIRAL DISEASE RULES — READ CAREFULLY:
+✗ There is NO chemical cure for viral diseases
+✗ DO NOT recommend fungicides, bactericides, or general sprays
+✓ Focus: Remove and destroy infected plants immediately
+✓ Focus: Control the insect vector (aphids, whitefly, thrips)
+✓ Focus: Disinfect tools between plants
+✓ Advise: Plant resistant varieties in next season
+The farmer must understand: treating the symptoms will not eliminate the virus.
+{% elif disease_category == "nutrient_deficiency" %}
+NUTRIENT DEFICIENCY RULES:
+✗ DO NOT recommend any pesticide — this is not a disease
+✓ Identify the specific deficient nutrient from symptoms
+✓ Check and correct soil pH first (most deficiencies are pH-related)
+✓ Apply the specific nutrient in the correct form and rate
+✓ Consider foliar spray for rapid correction
+{% elif disease_category == "abiotic_stress" %}
+ABIOTIC STRESS RULES:
+✗ DO NOT recommend any pesticide — this is environmental
+✓ Address the root cause (irrigation, drainage, shade, soil)
+✓ No chemical treatment will fix drought, heat, or waterlogging
+{% elif disease_category == "insect" %}
+INSECT/PEST RULES:
+✓ Use: Appropriate insecticide or biological control
+✓ Use: Neem oil (effective for soft-bodied insects)
+✓ Use: Remove heavily infested leaves
+✗ DO NOT recommend: fungicides or bactericides
+{% endif %}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{% if personality == "friendly" %}
+Use simple, encouraging language. Assume the farmer has basic tools.
+{% elif personality == "formal" %}
+Use technical terminology with precise product names and dosages.
+{% elif personality == "concise" %}
+List only the 3 most critical actions. One sentence each.
+{% endif %}
+
+Respond ONLY with a valid JSON array. No markdown, no backticks, no extra text:
+
+[
+  {
+    "type": "immediate | organic | chemical | preventive",
+    "action": "short title",
+    "details": "specific instructions for THIS disease on THIS crop"
+  }
+]

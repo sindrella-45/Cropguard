@@ -1,0 +1,47 @@
+{#
+   format_response.j2
+   Final formatting prompt for Node 4 of the pipeline.
+   Takes all collected data and formats the final response.
+   
+   Variables:
+   - diagnosis: DiseaseDetection object
+   - treatments: list of Treatment objects
+   - prevention_tips: list of strings
+   - sources: list of SourceReference objects
+   - personality: communication style
+#}
+
+Format a complete final response combining all of the
+following information into a single clean JSON object.
+
+Diagnosis found:
+{{ diagnosis | tojson }}
+
+{% if treatments %}
+Treatments recommended:
+{{ treatments | tojson }}
+{% endif %}
+
+{% if prevention_tips %}
+Prevention tips:
+{{ prevention_tips | tojson }}
+{% endif %}
+
+{% if sources %}
+Sources used from knowledge base:
+{% for source in sources %}
+- {{ source.document_name }} 
+  (score: {{ source.similarity_score }})
+{% endfor %}
+{% endif %}
+
+Ensure the farmer advice field is:
+{% if personality == "friendly" %}
+Warm, encouraging and ends with reassurance.
+{% elif personality == "formal" %}
+Professional and references next steps clearly.
+{% elif personality == "concise" %}
+One short sentence. Maximum 10 words.
+{% endif %}
+
+Respond ONLY with the complete valid JSON object.
