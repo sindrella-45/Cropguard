@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.next/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.pyc
+venv/
+chroma_db/
+
+# Data
+backend/data/raw/*.pdf
+backend/data/processed/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Testing
+.pytest_cache/
+coverage/
+```
+

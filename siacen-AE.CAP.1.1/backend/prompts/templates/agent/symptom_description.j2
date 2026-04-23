@@ -1,0 +1,47 @@
+{#
+   agent/symptom_description.j2
+
+   Pure symptom description prompt — Node 5.
+
+   Critically: this prompt NEVER mentions disease names.
+   The model describes only what it physically observes.
+   This feeds RAG retrieval and differential diagnosis but
+   does not anchor on any disease label prematurely.
+
+   Variables:
+   - crop:         identified crop name e.g. "cotton"
+   - weather_data: optional dict with temperature, humidity, disease_risk
+#}
+You are examining a {{ crop }} leaf.
+
+{% if weather_data %}
+Current weather context:
+- Temperature: {{ weather_data.temperature }}°C
+- Humidity: {{ weather_data.humidity }}%
+- Disease risk level: {{ weather_data.disease_risk | default("unknown") }}
+{% if weather_data.humidity > 80 %}
+Note: High humidity increases fungal disease risk on this crop.
+{% endif %}
+{% if weather_data.temperature > 35 %}
+Note: Temperatures above 35°C can cause heat stress symptoms.
+{% endif %}
+{% endif %}
+
+Describe ONLY what you physically observe on this leaf.
+Do NOT name any disease, pathogen, pest, or condition.
+Do NOT make any diagnosis.
+
+For every observation, describe:
+1. Location — where on the leaf (edge, centre, veins, tip, whole leaf)
+2. Colour — exact colours and any changes from normal
+3. Texture — powdery, water-soaked, dry, sunken, raised, greasy
+4. Pattern — uniform, angular, circular, interveinal, ring-shaped, random
+5. Any growth — mold, pustules, ooze, webbing, sticky residue
+6. Distribution — scattered, clustered, marginal, tip-only, whole plant
+
+Be specific and objective. Describe what you see, not what you think it is.
+
+Note: If the leaf appears completely healthy with no abnormalities,
+describe the normal morphological features — colour, texture, vein
+pattern, size — so the crop can still be identified and a healthy
+result returned. Do not force disease symptoms where none exist.

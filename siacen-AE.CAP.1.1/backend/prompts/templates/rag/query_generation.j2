@@ -1,0 +1,31 @@
+{#
+   query_generation.j2
+   Converts the visual description into a ChromaDB
+   search query to find relevant disease information.
+   
+   Variables:
+   - visual_description: string from vision analysis node
+   - plant_type: optional plant hint
+#}
+
+Based on this visual description of a plant leaf:
+
+{{ visual_description }}
+
+Generate a precise, concise search query to find 
+relevant crop disease information in our database.
+
+The query should focus on:
+- The main visible symptoms described
+- The plant type if known: {{ plant_type | default("unknown") }}
+- The affected plant parts mentioned
+- Any colour changes or growth patterns noted
+
+Rules for the query:
+- Keep it under 15 words
+- Focus on symptoms not conclusions
+- Use agricultural terminology where appropriate
+- Do not include speculation about the disease name
+
+Return only the search query string.
+Nothing else. No explanation. No punctuation at the end.
