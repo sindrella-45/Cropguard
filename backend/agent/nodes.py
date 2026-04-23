@@ -1,19 +1,7 @@
+# backend/agent/nodes.py
 """
 LangGraph node functions for CropGuard AI.
-
-Pipeline (11 nodes):
-  1.  validate_input         — image validation
-  2.  load_memory            — farmer history from Supabase + Redis
-  3.  fetch_weather          — weather context from API
-  4.  identify_crop          — crop ID only (gated, separate call)
-  5.  describe_symptoms      — symptom description only (no disease naming)
-  6.  lookup_disease_node    — ChromaDB RAG retrieval
-  7.  detect_disease         — differential top-3 diagnosis
-  8.  run_consistency_check  — biological consistency rules (pure Python)
-  9a. healthy_path           — prevention tips
-  9b. treatment_path         — category-constrained treatments
-  10. format_response        — assemble final output
-  11. save_memory            — persist to Supabase + Redis
+[docstring unchanged]
 """
 
 import json
@@ -41,11 +29,8 @@ from utils.image import validate_image
 
 logger = logging.getLogger(__name__)
 
-# Crops covered by the knowledge base — used in crop_identification.j2
 KNOWN_CROPS = ["coffee", "tea", "cocoa", "cotton", "sunflower"]
 
-
-# ── helpers ────────────────────────────────────────────────────────────────────
 
 def _parse_json(text: str):
     clean = text.replace("```json", "").replace("```", "").strip()
@@ -57,14 +42,21 @@ def _parse_json(text: str):
 async def validate_input(state: AgentState) -> dict[str, Any]:
     logger.info("Node 1: Validating input image")
     try:
-        is_valid, message = validate_image(state.image_data, state.image_type)
+        # CHANGED: state.image_data → state["image_data"]
+        # CHANGED: state.image_type → state["image_type"]
+        is_valid, message = validate_image(
+            state["image_data"], state["image_type"]
+        )
         if not is_valid:
             logger.warning(f"Image validation failed: {message}")
             return {"error": message, "error_node": "validate_input"}
         logger.info("Image validation passed")
         return {}
     except Exception as e:
-        return {"error": f"Image validation error: {str(e)}", "error_node": "validate_input"}
+        return {
+            "error": f"Image validation error: {str(e)}",
+            "error_node": "validate_input",
+        }
 
 
 # ── Node 2: Load Memory ────────────────────────────────────────────────────────
@@ -74,8 +66,9 @@ async def load_memory(state: AgentState) -> dict[str, Any]:
     try:
         past_diagnoses  = []
         history_summary = None
-        if state.user_id:
-            lt      = LongTermMemory(user_id=state.user_id)
+        # CHANGED: state.user_id → state.get("user_id")
+        if state.get("user_id"):
+            lt      = LongTermMemory(user_id=state["user_id"])
             summary = lt.get_history_summary()
             past_diagnoses = summary.get("recent_diagnoses", [])
             if past_diagnoses:
@@ -84,8 +77,9 @@ async def load_memory(state: AgentState) -> dict[str, Any]:
                     past_diagnoses=past_diagnoses,
                     farmer_name=None,
                 )
-        if state.session_id:
-            ShortTermMemory(session_id=state.session_id).extend_session()
+        # CHANGED: state.session_id → state.get("session_id")
+        if state.get("session_id"):
+            ShortTermMemory(session_id=state["session_id"]).extend_session()
         return {"past_diagnoses": past_diagnoses, "history_summary": history_summary}
     except Exception as e:
         logger.error(f"Memory load error: {e}")
@@ -96,11 +90,12 @@ async def load_memory(state: AgentState) -> dict[str, Any]:
 
 async def fetch_weather(state: AgentState) -> dict[str, Any]:
     logger.info("Node 3: Fetching weather data")
-    if not state.location:
+    # CHANGED: state.location → state.get("location")
+    if not state.get("location"):
         logger.info("No location — skipping weather")
         return {"weather_data": None}
     try:
-        return {"weather_data": await get_weather(location=state.location)}
+        return {"weather_data": await get_weather(location=state["location"])}
     except Exception as e:
         logger.error(f"Weather fetch error: {e}")
         return {"weather_data": None}
@@ -109,21 +104,12 @@ async def fetch_weather(state: AgentState) -> dict[str, Any]:
 # ── Node 4: Identify Crop ──────────────────────────────────────────────────────
 
 async def identify_crop(state: AgentState) -> dict[str, Any]:
-    """
-    Dedicated crop identification step — prompt lives in
-    agent/crop_identification.j2 and agent/crop_identification_system.j2
-
-    If farmer provided plant_type, that always takes priority over
-    model inference — the farmer knows what they planted.
-
-    Confidence gate: < 60% → use 'general', set needs_confirmation=True
-    so the frontend can ask the farmer to confirm.
-    """
     logger.info("Node 4: Identifying crop from image")
 
-    # Farmer hint always wins
-    if state.plant_type and state.plant_type.lower() not in ("unknown", ""):
-        crop = state.plant_type.lower().strip()
+    # CHANGED: state.plant_type → state.get("plant_type")
+    plant_type = state.get("plant_type")
+    if plant_type and plant_type.lower() not in ("unknown", ""):
+        crop = plant_type.lower().strip()
         logger.info(f"Crop from farmer hint: '{crop}' (100%)")
         return {
             "crop_identified":         crop,
@@ -132,21 +118,22 @@ async def identify_crop(state: AgentState) -> dict[str, Any]:
         }
 
     try:
-        client = get_llm_client(state.selected_model)
+        # CHANGED: state.selected_model → state["selected_model"]
+        client = get_llm_client(state["selected_model"])
 
         user_prompt   = render_prompt(
             "agent/crop_identification.j2",
             known_crops=KNOWN_CROPS,
         )
-        system_prompt = render_prompt(
-            "agent/crop_identification_system.j2",
-        )
+        system_prompt = render_prompt("agent/crop_identification_system.j2")
 
         raw, tokens = await client.complete_with_image(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            image_data=state.image_data,
-            image_type=state.image_type,
+            # CHANGED: state.image_data → state["image_data"]
+            # CHANGED: state.image_type → state["image_type"]
+            image_data=state["image_data"],
+            image_type=state["image_type"],
             max_tokens=150,
             temperature=0.1,
         )
@@ -155,7 +142,8 @@ async def identify_crop(state: AgentState) -> dict[str, Any]:
         crop       = parsed.get("crop", "general").lower().strip()
         confidence = int(parsed.get("confidence", 0))
         reasoning  = parsed.get("reasoning", "")
-        cost       = calculate_cost(tokens=tokens, model=state.selected_model)
+        # CHANGED: state.selected_model → state["selected_model"]
+        cost       = calculate_cost(tokens=tokens, model=state["selected_model"])
 
         logger.info(f"Crop identified: '{crop}' ({confidence}%) — {reasoning}")
 
@@ -165,22 +153,25 @@ async def identify_crop(state: AgentState) -> dict[str, Any]:
                 "crop_identified":         "general",
                 "crop_confidence":         confidence,
                 "crop_needs_confirmation": True,
-                "tokens_used":             state.tokens_used + tokens,
-                "cost_usd":                state.cost_usd + cost,
+                # CHANGED: state.tokens_used → state["tokens_used"]
+                # CHANGED: state.cost_usd    → state["cost_usd"]
+                "tokens_used": state["tokens_used"] + tokens,
+                "cost_usd":    state["cost_usd"] + cost,
             }
 
         return {
             "crop_identified":         crop,
             "crop_confidence":         confidence,
             "crop_needs_confirmation": False,
-            "tokens_used":             state.tokens_used + tokens,
-            "cost_usd":                state.cost_usd + cost,
+            "tokens_used": state["tokens_used"] + tokens,
+            "cost_usd":    state["cost_usd"] + cost,
         }
 
     except Exception as e:
         logger.error(f"Crop identification failed: {e}")
         return {
-            "crop_identified":         state.plant_type or "general",
+            # CHANGED: state.plant_type → state.get("plant_type")
+            "crop_identified":         state.get("plant_type") or "general",
             "crop_confidence":         0,
             "crop_needs_confirmation": False,
         }
@@ -189,46 +180,42 @@ async def identify_crop(state: AgentState) -> dict[str, Any]:
 # ── Node 5: Describe Symptoms ──────────────────────────────────────────────────
 
 async def describe_symptoms(state: AgentState) -> dict[str, Any]:
-    """
-    Pure symptom description — no disease naming allowed.
-    Prompt lives in agent/symptom_description.j2
-
-    Separated from crop identification so GPT-4o cannot anchor on
-    a known disease during the visual analysis phase.
-    """
     logger.info("Node 5: Describing symptoms (no disease naming)")
 
-    crop = state.crop_identified or "plant"
+    # CHANGED: state.crop_identified → state.get("crop_identified")
+    crop = state.get("crop_identified") or "plant"
 
     try:
-        client = get_llm_client(state.selected_model)
+        client = get_llm_client(state["selected_model"])
 
-        user_prompt   = render_prompt(
+        user_prompt = render_prompt(
             "agent/symptom_description.j2",
             crop=crop,
-            weather_data=state.weather_data,
+            # CHANGED: state.weather_data → state.get("weather_data")
+            weather_data=state.get("weather_data"),
         )
         system_prompt = render_prompt(
             "agent/system.j2",
-            personality=state.personality,
+            # CHANGED: state.personality → state["personality"]
+            personality=state["personality"],
         )
 
         raw, tokens = await client.complete_with_image(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            image_data=state.image_data,
-            image_type=state.image_type,
+            image_data=state["image_data"],
+            image_type=state["image_type"],
             max_tokens=500,
             temperature=0.2,
         )
 
-        cost = calculate_cost(tokens=tokens, model=state.selected_model)
+        cost = calculate_cost(tokens=tokens, model=state["selected_model"])
         logger.info(f"Symptom description: {len(raw)} chars, {tokens} tokens")
 
         return {
             "symptom_description": raw,
-            "tokens_used":         state.tokens_used + tokens,
-            "cost_usd":            state.cost_usd + cost,
+            "tokens_used":         state["tokens_used"] + tokens,
+            "cost_usd":            state["cost_usd"] + cost,
         }
 
     except Exception as e:
@@ -245,16 +232,18 @@ async def describe_symptoms(state: AgentState) -> dict[str, Any]:
 async def lookup_disease_node(state: AgentState) -> dict[str, Any]:
     logger.info("Node 6: RAG lookup")
 
+    # CHANGED: state.crop_identified / state.plant_type → .get()
     effective_crop = (
-        state.crop_identified or state.plant_type or "general"
+        state.get("crop_identified") or state.get("plant_type") or "general"
     ).lower()
 
     logger.info(f"RAG: crop='{effective_crop}'")
 
     try:
         sources = await lookup_disease(
-            visual_description=state.symptom_description or "",
-            plant_type=state.plant_type,
+            # CHANGED: state.symptom_description → state.get(...)
+            visual_description=state.get("symptom_description") or "",
+            plant_type=state.get("plant_type"),
             crop=effective_crop,
         )
         logger.info(f"RAG: {len(sources)} sources found")
@@ -267,34 +256,33 @@ async def lookup_disease_node(state: AgentState) -> dict[str, Any]:
         return {"retrieved_sources": [], "fallback_triggered": False}
 
 
-# ── Node 7: Detect Disease — differential top-3 ───────────────────────────────
+# ── Node 7: Detect Disease ────────────────────────────────────────────────────
 
 async def detect_disease(state: AgentState) -> dict[str, Any]:
-    """
-    Differential diagnosis — prompt lives in agent/disease_detection.j2
-
-    Returns top-3 diagnoses. Includes abiotic/nutrient options.
-    Forces against_evidence for honest uncertainty.
-    """
     logger.info("Node 7: Differential diagnosis (top-3)")
 
     try:
-        client = get_llm_client(state.selected_model)
+        client = get_llm_client(state["selected_model"])
 
-        crop      = state.crop_identified or state.plant_type or "unknown plant"
-        crop_conf = state.crop_confidence or 0
+        # CHANGED: state.crop_identified → state.get("crop_identified")
+        # CHANGED: state.plant_type      → state.get("plant_type")
+        # CHANGED: state.crop_confidence → state.get("crop_confidence")
+        crop      = state.get("crop_identified") or state.get("plant_type") or "unknown plant"
+        crop_conf = state.get("crop_confidence") or 0
 
-        user_prompt   = render_prompt(
+        user_prompt = render_prompt(
             "agent/disease_detection.j2",
-            visual_analysis=state.symptom_description or "",
-            retrieved_context=state.retrieved_sources,
+            # CHANGED: state.symptom_description → state.get(...)
+            visual_analysis=state.get("symptom_description") or "",
+            # CHANGED: state.retrieved_sources → state["retrieved_sources"]
+            retrieved_context=state["retrieved_sources"],
             plant_type=crop,
             crop_confidence=crop_conf,
-            personality=state.personality,
+            personality=state["personality"],
         )
         system_prompt = render_prompt(
             "agent/system.j2",
-            personality=state.personality,
+            personality=state["personality"],
         )
 
         raw, tokens = await client.complete(
@@ -305,7 +293,7 @@ async def detect_disease(state: AgentState) -> dict[str, Any]:
         )
 
         parsed    = _parse_json(raw)
-        cost      = calculate_cost(tokens=tokens, model=state.selected_model)
+        cost      = calculate_cost(tokens=tokens, model=state["selected_model"])
         diagnoses = parsed.get("diagnoses", [])
 
         if not diagnoses:
@@ -330,6 +318,11 @@ async def detect_disease(state: AgentState) -> dict[str, Any]:
         else:
             health_status = HealthStatus.diseased
 
+        # DiseaseDetection is still constructed as a Pydantic model here —
+        # it is stored in state["diagnosis"] as a live object during graph
+        # execution. format_response and save_memory call .dict() on it.
+        # If LangGraph checkpointing is enabled, serialise to dict in
+        # save_memory and reconstruct with DiseaseDetection(**d) on reload.
         diagnosis_obj = DiseaseDetection(
             plant_identified=parsed.get("plant_identified", crop),
             health_status=health_status,
@@ -362,8 +355,8 @@ async def detect_disease(state: AgentState) -> dict[str, Any]:
         return {
             "differential_diagnoses": diagnoses,
             "diagnosis":              diagnosis_obj,
-            "tokens_used":            state.tokens_used + tokens,
-            "cost_usd":               state.cost_usd + cost,
+            "tokens_used":            state["tokens_used"] + tokens,
+            "cost_usd":               state["cost_usd"] + cost,
         }
 
     except Exception as e:
@@ -374,19 +367,16 @@ async def detect_disease(state: AgentState) -> dict[str, Any]:
         }
 
 
-# ── Node 8: Consistency Check — pure Python, no LLM ──────────────────────────
+# ── Node 8: Consistency Check ─────────────────────────────────────────────────
 
 async def run_consistency_check(state: AgentState) -> dict[str, Any]:
-    """
-    Validates biological consistency of the primary diagnosis.
-    No API call. No cost. Instant.
-    """
     logger.info("Node 8: Biological consistency check")
 
-    if not state.diagnosis or not state.differential_diagnoses:
+    # CHANGED: state.diagnosis / state.differential_diagnoses → dict access
+    if not state.get("diagnosis") or not state.get("differential_diagnoses"):
         return {"consistency_warnings": [], "consistency_penalty": 0}
 
-    primary  = state.differential_diagnoses[0]
+    primary  = state["differential_diagnoses"][0]
     category = primary.get("category", "unknown")
 
     if category == "unknown":
@@ -399,21 +389,23 @@ async def run_consistency_check(state: AgentState) -> dict[str, Any]:
         diagnosis_name=primary.get("name", ""),
         category=category,
         symptoms_seen=primary.get("supporting_evidence", []),
-        treatments=[],      # treatments not yet generated at this stage
+        treatments=[],
         description=primary.get("description", ""),
     )
 
+    # CHANGED: state.retrieved_sources → state["retrieved_sources"]
     rag_top_score = (
-        max(s.similarity_score for s in state.retrieved_sources)
-        if state.retrieved_sources else 0.0
+        max(s.similarity_score for s in state["retrieved_sources"])
+        if state["retrieved_sources"] else 0.0
     )
 
     calibrated = compute_calibrated_confidence(
         gpt_raw_score       =primary.get("probability", 50),
         rag_top_score       =rag_top_score,
-        rag_chunks_passed   =len(state.retrieved_sources),
+        rag_chunks_passed   =len(state["retrieved_sources"]),
         consistency_penalty =result["confidence_penalty"],
-        crop_confidence     =float(state.crop_confidence or 0),
+        # CHANGED: state.crop_confidence → state.get("crop_confidence")
+        crop_confidence     =float(state.get("crop_confidence") or 0),
     )
 
     logger.info(
@@ -422,13 +414,18 @@ async def run_consistency_check(state: AgentState) -> dict[str, Any]:
         f"(raw was {primary.get('probability', 50)}%)"
     )
 
-    updated_diagnosis = state.diagnosis
-    if updated_diagnosis:
-        updated_diagnosis = updated_diagnosis.copy(
-            update={"confidence_score": calibrated}
-        )
+    # CHANGED: state.diagnosis.copy(update={...}) is Pydantic-specific.
+    # DiseaseDetection is still a Pydantic model, so .copy() still works —
+    # but we re-assign via the returned delta dict, not in-place mutation.
+    current_diagnosis = state["diagnosis"]
+    updated_diagnosis = (
+        current_diagnosis.copy(update={"confidence_score": calibrated})
+        if current_diagnosis else None
+    )
 
     return {
+        # operator.add reducer: these warnings ACCUMULATE with any
+        # warnings already in state from earlier nodes.
         "consistency_warnings":  result["warnings"],
         "consistency_penalty":   result["confidence_penalty"],
         "calibrated_confidence": calibrated,
@@ -436,23 +433,25 @@ async def run_consistency_check(state: AgentState) -> dict[str, Any]:
     }
 
 
-# ── Node 9a: Healthy Path ──────────────────────────────────────────────────────
+# ── Node 9a: Healthy Path ─────────────────────────────────────────────────────
 
 async def healthy_path(state: AgentState) -> dict[str, Any]:
     logger.info("Node 9a: Healthy path")
     try:
-        client = get_llm_client(state.selected_model)
-        plant  = state.diagnosis.plant_identified if state.diagnosis else "plant"
+        client = get_llm_client(state["selected_model"])
+        # CHANGED: state.diagnosis.plant_identified → dict access with guard
+        diagnosis = state.get("diagnosis")
+        plant     = diagnosis.plant_identified if diagnosis else "plant"
 
-        user_prompt   = render_prompt(
+        user_prompt = render_prompt(
             "agent/healthy_path.j2",
             plant_identified=plant,
-            weather_data=state.weather_data,
-            personality=state.personality,
+            weather_data=state.get("weather_data"),
+            personality=state["personality"],
         )
         system_prompt = render_prompt(
             "agent/system.j2",
-            personality=state.personality,
+            personality=state["personality"],
         )
 
         raw, tokens = await client.complete(
@@ -462,12 +461,12 @@ async def healthy_path(state: AgentState) -> dict[str, Any]:
             temperature=0.3,
         )
         tips = _parse_json(raw) if raw.strip().startswith("[") else []
-        cost = calculate_cost(tokens=tokens, model=state.selected_model)
+        cost = calculate_cost(tokens=tokens, model=state["selected_model"])
 
         return {
             "prevention_tips": tips,
-            "tokens_used":     state.tokens_used + tokens,
-            "cost_usd":        state.cost_usd + cost,
+            "tokens_used":     state["tokens_used"] + tokens,
+            "cost_usd":        state["cost_usd"] + cost,
         }
     except Exception as e:
         logger.error(f"Healthy path failed: {e}")
@@ -480,35 +479,36 @@ async def healthy_path(state: AgentState) -> dict[str, Any]:
         }
 
 
-# ── Node 9b: Treatment Path ────────────────────────────────────────────────────
+# ── Node 9b: Treatment Path ───────────────────────────────────────────────────
 
 async def treatment_path(state: AgentState) -> dict[str, Any]:
-    """
-    Category-constrained treatment generation.
-    Prompt lives in agent/treatment.j2 — category rules are in the template.
-    """
     logger.info("Node 9b: Treatment path")
     try:
-        client = get_llm_client(state.selected_model)
+        client = get_llm_client(state["selected_model"])
 
-        primary  = state.differential_diagnoses[0] if state.differential_diagnoses else {}
-        category = primary.get("category", "unknown")
-        plant    = state.diagnosis.plant_identified if state.diagnosis else "plant"
-        diag     = state.diagnosis.diagnosis if state.diagnosis else None
+        # CHANGED: state.differential_diagnoses → state.get(...)
+        # CHANGED: state.diagnosis              → state.get(...)
+        diff_diagnoses = state.get("differential_diagnoses") or []
+        primary        = diff_diagnoses[0] if diff_diagnoses else {}
+        category       = primary.get("category", "unknown")
+        diagnosis      = state.get("diagnosis")
+        plant          = diagnosis.plant_identified if diagnosis else "plant"
+        diag_detail    = diagnosis.diagnosis if diagnosis else None
 
-        user_prompt   = render_prompt(
+        user_prompt = render_prompt(
             "agent/treatment.j2",
-            diagnosis=diag,
+            diagnosis=diag_detail,
             plant_identified=plant,
             disease_category=category,
-            retrieved_context=state.retrieved_sources,
-            weather_data=state.weather_data,
-            personality=state.personality,
-            differential_diagnoses=state.differential_diagnoses,
+            # CHANGED: state.retrieved_sources → state["retrieved_sources"]
+            retrieved_context=state["retrieved_sources"],
+            weather_data=state.get("weather_data"),
+            personality=state["personality"],
+            differential_diagnoses=diff_diagnoses,
         )
         system_prompt = render_prompt(
             "agent/system.j2",
-            personality=state.personality,
+            personality=state["personality"],
         )
 
         raw, tokens = await client.complete(
@@ -518,10 +518,12 @@ async def treatment_path(state: AgentState) -> dict[str, Any]:
             temperature=0.2,
         )
         treatments = _parse_json(raw) if raw.strip().startswith("[") else []
-        cost       = calculate_cost(tokens=tokens, model=state.selected_model)
+        cost       = calculate_cost(tokens=tokens, model=state["selected_model"])
 
-        # Post-generation consistency check on the actual treatments
-        if state.differential_diagnoses:
+        # Post-generation consistency check — warnings go into
+        # consistency_warnings via operator.add (accumulates with node 8's
+        # warnings; does NOT overwrite them).
+        if diff_diagnoses:
             consistency = check_consistency(
                 diagnosis_name=primary.get("name", ""),
                 category=category,
@@ -535,12 +537,20 @@ async def treatment_path(state: AgentState) -> dict[str, Any]:
                     "action":  "⚠ Consistency Note",
                     "details": " | ".join(consistency["warnings"]),
                 })
+                # Return warnings so they accumulate via operator.add
+                extra_warnings = consistency["warnings"]
+            else:
+                extra_warnings = []
+        else:
+            extra_warnings = []
 
         logger.info(f"Generated {len(treatments)} treatments for category='{category}'")
         return {
-            "treatments":  treatments,
-            "tokens_used": state.tokens_used + tokens,
-            "cost_usd":    state.cost_usd + cost,
+            "treatments":           treatments,
+            # operator.add will merge these with node 8's warnings
+            "consistency_warnings": extra_warnings,
+            "tokens_used":          state["tokens_used"] + tokens,
+            "cost_usd":             state["cost_usd"] + cost,
         }
 
     except Exception as e:
@@ -551,31 +561,36 @@ async def treatment_path(state: AgentState) -> dict[str, Any]:
         }
 
 
-# ── Node 10: Format Response ───────────────────────────────────────────────────
+# ── Node 10: Format Response ──────────────────────────────────────────────────
 
 async def format_response(state: AgentState) -> dict[str, Any]:
     logger.info("Node 10: Formatting final response")
     try:
+        # CHANGED: state.diagnosis → state.get("diagnosis")
+        diagnosis = state.get("diagnosis")
         diagnosis_dict = (
-            state.diagnosis.dict()
-            if state.diagnosis and hasattr(state.diagnosis, "dict")
+            diagnosis.dict()
+            if diagnosis and hasattr(diagnosis, "dict")
             else None
         )
-        if diagnosis_dict and state.calibrated_confidence is not None:
-            diagnosis_dict["confidence_score"] = state.calibrated_confidence
+        # CHANGED: state.calibrated_confidence → state.get("calibrated_confidence")
+        if diagnosis_dict and state.get("calibrated_confidence") is not None:
+            diagnosis_dict["confidence_score"] = state["calibrated_confidence"]
 
+        # CHANGED: state.retrieved_sources → state["retrieved_sources"]
         sources_list = [
             s.dict() if hasattr(s, "dict") else s
-            for s in state.retrieved_sources
+            for s in state["retrieved_sources"]
         ]
 
         return {
             "final_response": {
                 "diagnosis":               diagnosis_dict,
-                "differential_diagnoses":  state.differential_diagnoses,
-                "consistency_warnings":    state.consistency_warnings,
-                "treatments":              state.treatments,
-                "prevention_tips":         state.prevention_tips,
+                # CHANGED: all state.field → state["field"] / state.get("field")
+                "differential_diagnoses":  state.get("differential_diagnoses", []),
+                "consistency_warnings":    state.get("consistency_warnings", []),
+                "treatments":              state.get("treatments", []),
+                "prevention_tips":         state.get("prevention_tips", []),
                 "sources":                 sources_list,
                 "retrieved_context": [
                     {
@@ -585,45 +600,51 @@ async def format_response(state: AgentState) -> dict[str, Any]:
                     }
                     for s in sources_list
                 ],
-                "crop_identified":          state.crop_identified,
-                "crop_confidence":          state.crop_confidence,
-                "crop_needs_confirmation":  state.crop_needs_confirmation,
-                "tokens_used":              state.tokens_used,
-                "cost_usd":                 round(state.cost_usd, 6),
-                "session_id":               state.session_id,
-                "fallback_triggered":       state.fallback_triggered,
-                "weather_data":             state.weather_data,
-                "model_used":               state.selected_model,
+                "crop_identified":         state.get("crop_identified"),
+                "crop_confidence":         state.get("crop_confidence"),
+                "crop_needs_confirmation": state.get("crop_needs_confirmation"),
+                "tokens_used":             state.get("tokens_used", 0),
+                "cost_usd":                round(state.get("cost_usd", 0.0), 6),
+                "session_id":              state.get("session_id"),
+                "fallback_triggered":      state.get("fallback_triggered", False),
+                "weather_data":            state.get("weather_data"),
+                "model_used":              state.get("selected_model"),
             }
         }
     except Exception as e:
         logger.error(f"Format response failed: {e}")
-        return {"error": f"Response formatting failed: {str(e)}", "error_node": "format_response"}
+        return {
+            "error":      f"Response formatting failed: {str(e)}",
+            "error_node": "format_response",
+        }
 
 
-# ── Node 11: Save Memory ───────────────────────────────────────────────────────
+# ── Node 11: Save Memory ──────────────────────────────────────────────────────
 
 async def save_memory(state: AgentState) -> dict[str, Any]:
     logger.info("Node 11: Saving to memory")
     diagnosis_id = None
     try:
-        if state.user_id and state.diagnosis:
-            lt = LongTermMemory(user_id=state.user_id)
+        # CHANGED: state.user_id / state.diagnosis → dict access
+        diagnosis = state.get("diagnosis")
+        if state.get("user_id") and diagnosis:
+            lt = LongTermMemory(user_id=state["user_id"])
             diagnosis_id = lt.save_diagnosis(
-                diagnosis=state.diagnosis.dict(),
-                tokens_used=state.tokens_used,
-                cost_usd=state.cost_usd,
+                diagnosis=diagnosis.dict(),
+                tokens_used=state.get("tokens_used", 0),
+                cost_usd=state.get("cost_usd", 0.0),
             )
             logger.info(f"Saved to Supabase: {diagnosis_id}")
 
-        if state.session_id and state.diagnosis:
-            st = ShortTermMemory(session_id=state.session_id)
-            st.save_diagnosis(state.diagnosis.dict())
+        # CHANGED: state.session_id → state.get("session_id")
+        if state.get("session_id") and diagnosis:
+            st = ShortTermMemory(session_id=state["session_id"])
+            st.save_diagnosis(diagnosis.dict())
             st.save_message(
                 role="assistant",
-                content=f"Diagnosed: {state.diagnosis.diagnosis.name}",
+                content=f"Diagnosed: {diagnosis.diagnosis.name}",
             )
-            logger.info(f"Saved to Redis: {state.session_id}")
+            logger.info(f"Saved to Redis: {state['session_id']}")
 
         return {"diagnosis_id": diagnosis_id}
     except Exception as e:

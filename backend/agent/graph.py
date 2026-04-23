@@ -1,15 +1,11 @@
 # backend/agent/graph.py
-"""
-LangGraph workflow — updated for 11-node pipeline with:
-  - Separate crop ID node (gated)
-  - Separate symptom description node
-  - Consistency check node
-  - Differential top-3 diagnosis
-"""
+
 import logging
 import uuid
 from langgraph.graph import StateGraph, END
-from agent.state import AgentState
+
+from agent.state import AgentState, make_initial_state
+
 from agent.nodes import (
     validate_input, load_memory, fetch_weather,
     identify_crop, describe_symptoms,
@@ -18,6 +14,7 @@ from agent.nodes import (
     healthy_path, treatment_path,
     format_response, save_memory,
 )
+
 from agent.edges import (
     route_after_validation,
     route_after_crop_id,
@@ -28,214 +25,192 @@ from agent.edges import (
 logger = logging.getLogger(__name__)
 
 
+# ─────────────────────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────────────────────
+
 def _get_field(state, field: str, default=None):
     if isinstance(state, dict):
         return state.get(field, default)
     return getattr(state, field, default)
 
 
+# ─────────────────────────────────────────────────────────────
+# Error / Fallback Handlers
+# ─────────────────────────────────────────────────────────────
+
 async def handle_error(state: AgentState) -> dict:
-    error     = _get_field(state, "error", "Unknown error")
+    error      = _get_field(state, "error", "Unknown error")
     error_node = _get_field(state, "error_node", "unknown")
+
     logger.error(f"Error in '{error_node}': {error}")
-    return {"final_response": {
-        "error": True, "message": error,
-        "error_node": error_node, "diagnosis": None,
-    }}
+
+    return {
+        "final_response": {
+            "error": True,
+            "message": error,
+            "error_node": error_node,
+            "diagnosis": None,
+        }
+    }
 
 
 async def handle_fallback(state: AgentState) -> dict:
     logger.warning("RAG fallback — no confident knowledge base match")
-    personality = _get_field(state, "personality", "friendly")
-    try:
-        from rag.retrieval.fallback import handle_fallback as rag_fb
-        fb = rag_fb(confidence_score=0.0, personality=personality)
-    except Exception:
-        fb = {
-            "message": (
-                "I could not find enough information in the knowledge base "
-                "to give a reliable diagnosis. Please retake the photo in "
-                "good natural lighting and try again."
-            ),
+
+    return {
+        "final_response": {
+            "error": False,
+            "fallback_triggered": True,
+            "fallback_message": "Low confidence in diagnosis. Please retake a clearer image.",
             "recommended_actions": [
-                "Retake photo in good natural lighting",
-                "Make sure the affected leaf fills the frame",
-                "Contact your local agricultural extension officer",
+                "Retake photo in good lighting",
+                "Ensure the leaf fills the frame",
+                "Consult an agricultural expert",
             ],
+            "diagnosis": None,
         }
-    return {"final_response": {
-        "error": False, "fallback_triggered": True,
-        "fallback_message": fb.get("message", ""),
-        "recommended_actions": fb.get("recommended_actions", []),
-        "diagnosis": None,
-    }}
+    }
 
 
-def build_graph() -> StateGraph:
-    logger.info("Building updated LangGraph workflow (11 nodes)")
-    wf = StateGraph(AgentState)
+# ─────────────────────────────────────────────────────────────
+# Graph Builder (FIXED ✅)
+# ─────────────────────────────────────────────────────────────
 
-    # Register all nodes
-    wf.add_node("validate_input",       validate_input)
-    wf.add_node("load_memory",          load_memory)
-    wf.add_node("fetch_weather",        fetch_weather)
-    wf.add_node("identify_crop",        identify_crop)
-    wf.add_node("describe_symptoms",    describe_symptoms)
-    wf.add_node("lookup_disease",       lookup_disease_node)
-    wf.add_node("detect_disease",       detect_disease)
-    wf.add_node("run_consistency_check",run_consistency_check)
-    wf.add_node("healthy_path",         healthy_path)
-    wf.add_node("treatment_path",       treatment_path)
-    wf.add_node("format_response",      format_response)
-    wf.add_node("save_memory",          save_memory)
-    wf.add_node("handle_error",         handle_error)
-    wf.add_node("handle_fallback",      handle_fallback)
+def build_graph_v2():
+    graph = StateGraph(AgentState)
 
-    wf.set_entry_point("validate_input")
+    # ── Nodes ────────────────────────────────────────────────
+    graph.add_node("validate_input", validate_input)
+    graph.add_node("load_memory", load_memory)
+    graph.add_node("fetch_weather", fetch_weather)
+    graph.add_node("identify_crop", identify_crop)
+    graph.add_node("describe_symptoms", describe_symptoms)
+    graph.add_node("lookup_disease", lookup_disease_node)
+    graph.add_node("detect_disease", detect_disease)
+    graph.add_node("consistency_check", run_consistency_check)
+    graph.add_node("healthy_path", healthy_path)
+    graph.add_node("treatment_path", treatment_path)
+    graph.add_node("format_response", format_response)
+    graph.add_node("save_memory", save_memory)
 
-    # Conditional edges
-    wf.add_conditional_edges("validate_input",  route_after_validation,
-        {"handle_error": "handle_error", "load_memory": "load_memory"})
+    # ── Entry Point ──────────────────────────────────────────
+    graph.set_entry_point("validate_input")
 
-    wf.add_conditional_edges("identify_crop",   route_after_crop_id,
-        {"handle_error": "handle_error", "describe_symptoms": "describe_symptoms"})
+    # ── Flow ─────────────────────────────────────────────────
+    graph.add_conditional_edges(
+        "validate_input",
+        route_after_validation,
+        {
+            "error": "handle_error",
+            "continue": "load_memory",
+        },
+    )
 
-    wf.add_conditional_edges("lookup_disease",  route_after_rag,
-        {"handle_fallback": "handle_fallback", "detect_disease": "detect_disease"})
+    graph.add_node("handle_error", handle_error)
 
-    wf.add_conditional_edges("detect_disease",  route_after_detection,
-        {"handle_error": "handle_error",
-         "healthy_path": "healthy_path",
-         "treatment_path": "treatment_path"})
+    graph.add_edge("load_memory", "fetch_weather")
+    graph.add_edge("fetch_weather", "identify_crop")
 
-    # Linear edges
-    wf.add_edge("load_memory",           "fetch_weather")
-    wf.add_edge("fetch_weather",         "identify_crop")
-    wf.add_edge("describe_symptoms",     "lookup_disease")
-    wf.add_edge("detect_disease",        "run_consistency_check")
-    wf.add_edge("run_consistency_check", "healthy_path")   # overridden by conditional
-    wf.add_edge("healthy_path",          "format_response")
-    wf.add_edge("treatment_path",        "format_response")
-    wf.add_edge("format_response",       "save_memory")
+    graph.add_conditional_edges(
+        "identify_crop",
+        route_after_crop_id,
+        {
+            "continue": "describe_symptoms",
+            "needs_confirmation": "handle_error",
+        },
+    )
 
-    # Terminal edges
-    wf.add_edge("save_memory",     END)
-    wf.add_edge("handle_error",    END)
-    wf.add_edge("handle_fallback", END)
+    graph.add_edge("describe_symptoms", "lookup_disease")
 
-    compiled = wf.compile()
-    logger.info("LangGraph workflow compiled successfully")
-    return compiled
+    graph.add_conditional_edges(
+        "lookup_disease",
+        route_after_rag,
+        {
+            "fallback": "handle_fallback",
+            "continue": "detect_disease",
+        },
+    )
+
+    graph.add_node("handle_fallback", handle_fallback)
+
+    graph.add_edge("detect_disease", "consistency_check")
+
+    graph.add_conditional_edges(
+        "consistency_check",
+        route_after_detection,
+        {
+            "healthy": "healthy_path",
+            "diseased": "treatment_path",
+        },
+    )
+
+    graph.add_edge("healthy_path", "format_response")
+    graph.add_edge("treatment_path", "format_response")
+
+    graph.add_edge("format_response", "save_memory")
+    graph.add_edge("save_memory", END)
+
+    # 🚨 CRITICAL FIX
+    return graph.compile()
 
 
-# NOTE: After consistency_check we need to re-route to healthy/treatment
-# LangGraph doesn't allow a node to be both a linear target and a
-# conditional source. Fix: make consistency_check always go to a router node.
-
-def build_graph_v2() -> StateGraph:
-    """
-    Corrected graph: consistency_check routes to healthy_path or treatment_path
-    via a dedicated edge function.
-    """
-    from agent.edges import route_after_detection
-
-    logger.info("Building LangGraph workflow v2 (correct consistency routing)")
-    wf = StateGraph(AgentState)
-
-    wf.add_node("validate_input",       validate_input)
-    wf.add_node("load_memory",          load_memory)
-    wf.add_node("fetch_weather",        fetch_weather)
-    wf.add_node("identify_crop",        identify_crop)
-    wf.add_node("describe_symptoms",    describe_symptoms)
-    wf.add_node("lookup_disease",       lookup_disease_node)
-    wf.add_node("detect_disease",       detect_disease)
-    wf.add_node("run_consistency_check",run_consistency_check)
-    wf.add_node("healthy_path",         healthy_path)
-    wf.add_node("treatment_path",       treatment_path)
-    wf.add_node("format_response",      format_response)
-    wf.add_node("save_memory",          save_memory)
-    wf.add_node("handle_error",         handle_error)
-    wf.add_node("handle_fallback",      handle_fallback)
-
-    wf.set_entry_point("validate_input")
-
-    wf.add_conditional_edges("validate_input", route_after_validation,
-        {"handle_error": "handle_error", "load_memory": "load_memory"})
-
-    wf.add_conditional_edges("identify_crop", route_after_crop_id,
-        {"handle_error": "handle_error", "describe_symptoms": "describe_symptoms"})
-
-    wf.add_conditional_edges("lookup_disease", route_after_rag,
-        {"handle_fallback": "handle_fallback", "detect_disease": "detect_disease"})
-
-    # After consistency check, re-route based on health status
-    wf.add_conditional_edges("run_consistency_check", route_after_detection,
-        {"handle_error":   "handle_error",
-         "healthy_path":   "healthy_path",
-         "treatment_path": "treatment_path"})
-
-    wf.add_edge("load_memory",        "fetch_weather")
-    wf.add_edge("fetch_weather",      "identify_crop")
-    wf.add_edge("describe_symptoms",  "lookup_disease")
-    wf.add_edge("detect_disease",     "run_consistency_check")
-    wf.add_edge("healthy_path",       "format_response")
-    wf.add_edge("treatment_path",     "format_response")
-    wf.add_edge("format_response",    "save_memory")
-    wf.add_edge("save_memory",        END)
-    wf.add_edge("handle_error",       END)
-    wf.add_edge("handle_fallback",    END)
-
-    return wf.compile()
-
+# ─────────────────────────────────────────────────────────────
+# Initialize Graph
+# ─────────────────────────────────────────────────────────────
 
 _graph = build_graph_v2()
 
+if _graph is None:
+    raise RuntimeError("Graph failed to build")
+
+
+# ─────────────────────────────────────────────────────────────
+# Run Agent
+# ─────────────────────────────────────────────────────────────
 
 async def run_agent(
-    image_data: str, image_type: str = "image/jpeg",
-    plant_type: str = None, personality: str = "friendly",
-    selected_model: str = "gpt-4o", user_id: str = None,
-    session_id: str = None, location: str = None,
+    image_data: str,
+    image_type: str = "image/jpeg",
+    plant_type: str = None,
+    personality: str = "friendly",
+    selected_model: str = "gpt-4o",
+    user_id: str = None,
+    session_id: str = None,
+    location: str = None,
 ) -> dict:
+
     if not session_id:
         session_id = str(uuid.uuid4())
 
     logger.info(f"Agent run: model={selected_model} session={session_id}")
 
-    initial = AgentState(
-        image_data=image_data, image_type=image_type,
-        plant_type=plant_type, personality=personality,
-        selected_model=selected_model, user_id=user_id,
-        session_id=session_id, location=location,
+    initial = make_initial_state(
+        image_data=image_data,
+        image_type=image_type,
+        plant_type=plant_type,
+        personality=personality,
+        selected_model=selected_model,
+        user_id=user_id,
+        session_id=session_id,
+        location=location,
     )
 
     try:
         final_state = await _graph.ainvoke(initial)
 
         tokens = _get_field(final_state, "tokens_used", 0)
+
         logger.info(f"Agent run complete: tokens={tokens} session={session_id}")
 
         final_response = _get_field(final_state, "final_response", None)
 
         if final_response is None:
-            diagnosis = _get_field(final_state, "diagnosis", None)
-            if diagnosis:
-                d = diagnosis.dict() if hasattr(diagnosis, "dict") else diagnosis
-                sources = _get_field(final_state, "retrieved_sources", [])
-                return {
-                    "diagnosis":              d,
-                    "differential_diagnoses": _get_field(final_state, "differential_diagnoses", []),
-                    "consistency_warnings":   _get_field(final_state, "consistency_warnings", []),
-                    "sources":                [s.dict() if hasattr(s, "dict") else s for s in sources],
-                    "treatments":             _get_field(final_state, "treatments", []),
-                    "prevention_tips":        _get_field(final_state, "prevention_tips", []),
-                    "tokens_used":            tokens,
-                    "cost_usd":               _get_field(final_state, "cost_usd", 0.0),
-                    "session_id":             session_id,
-                    "fallback_triggered":     False,
-                    "model_used":             selected_model,
-                }
-            return {"error": True, "message": "Agent completed but produced no response.", "diagnosis": None}
+            return {
+                "error": True,
+                "message": "Agent completed but produced no response.",
+                "diagnosis": None,
+            }
 
         if isinstance(final_response, dict) and "session_id" not in final_response:
             final_response["session_id"] = session_id
@@ -244,4 +219,9 @@ async def run_agent(
 
     except Exception as e:
         logger.error(f"Agent run failed: {e}", exc_info=True)
-        return {"error": True, "message": "Unexpected error. Please try again.", "diagnosis": None}
+
+        return {
+            "error": True,
+            "message": "Unexpected error. Please try again.",
+            "diagnosis": None,
+        }

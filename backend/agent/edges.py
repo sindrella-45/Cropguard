@@ -1,50 +1,88 @@
 # backend/agent/edges.py
+
 """
-LangGraph conditional edge functions — updated for new 11-node pipeline.
+LangGraph conditional edge functions — FIXED.
+
+IMPORTANT:
+Routers MUST return LABELS, not node names.
 """
+
 import logging
+from typing import Literal
 from agent.state import AgentState
 
 logger = logging.getLogger(__name__)
 
 
-def route_after_validation(state: AgentState) -> str:
-    if state.error:
-        logger.warning(f"Routing to error: {state.error}")
-        return "handle_error"
-    return "load_memory"
+def _get(state, key, default=None):
+    if isinstance(state, dict):
+        return state.get(key, default)
+    return getattr(state, key, default)
 
 
-def route_after_crop_id(state: AgentState) -> str:
-    """
-    After crop identification, always proceed to symptom description.
-    crop_needs_confirmation is surfaced in the response but does not
-    block the pipeline — we use 'general' as the fallback crop.
-    """
-    if state.error:
-        return "handle_error"
-    return "describe_symptoms"
+# ─────────────────────────────────────────────
+# 1. After Validation
+# ─────────────────────────────────────────────
+
+def route_after_validation(state: AgentState) -> Literal["error", "continue"]:
+    if _get(state, "error"):
+        logger.warning(f"Routing to error: {_get(state, 'error')}")
+        return "error"
+
+    return "continue"
 
 
-def route_after_rag(state: AgentState) -> str:
-    if state.fallback_triggered:
-        logger.warning("RAG fallback triggered — insufficient knowledge base matches")
-        return "handle_fallback"
-    return "detect_disease"
+# ─────────────────────────────────────────────
+# 2. After Crop Identification
+# ─────────────────────────────────────────────
+
+def route_after_crop_id(state: AgentState) -> Literal["continue", "needs_confirmation"]:
+    if _get(state, "error"):
+        return "needs_confirmation"
+
+    if _get(state, "crop_needs_confirmation", False):
+        logger.warning("Crop confidence too low — needs confirmation")
+        return "needs_confirmation"
+
+    return "continue"
 
 
-def route_after_detection(state: AgentState) -> str:
-    if state.error:
-        logger.warning(f"Routing to error after detection: {state.error}")
-        return "handle_error"
-    if not state.diagnosis:
-        logger.warning("No diagnosis produced — routing to error")
-        return "handle_error"
+# ─────────────────────────────────────────────
+# 3. After RAG
+# ─────────────────────────────────────────────
 
-    status = state.diagnosis.health_status.value
+def route_after_rag(state: AgentState) -> Literal["fallback", "continue"]:
+    if _get(state, "fallback_triggered", False):
+        logger.warning("RAG fallback triggered")
+        return "fallback"
+
+    return "continue"
+
+
+# ─────────────────────────────────────────────
+# 4. After Detection
+# ─────────────────────────────────────────────
+
+def route_after_detection(state: AgentState) -> Literal["healthy", "diseased"]:
+    if _get(state, "error"):
+        logger.warning(f"Error after detection: {_get(state, 'error')}")
+        return "diseased"  # safe fallback
+
+    diagnosis = _get(state, "diagnosis")
+
+    if not diagnosis:
+        logger.warning("No diagnosis — treating as diseased fallback")
+        return "diseased"
+
+    # supports both dict + Pydantic
+    if isinstance(diagnosis, dict):
+        status = diagnosis.get("health_status", "diseased")
+    else:
+        status = getattr(diagnosis.health_status, "value", "diseased")
+
     logger.info(f"Routing after detection: health_status={status}")
 
     if status == "healthy":
-        return "healthy_path"
-    # diseased, stressed, uncertain — all go to treatment
-    return "treatment_path"
+        return "healthy"
+
+    return "diseased"
