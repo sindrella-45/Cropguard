@@ -1,15 +1,14 @@
 {#
-   treatment.j2 — category-constrained treatment generation.
+   treatment.j2 — professional treatment generation.
 
-   KEY FIX: disease_category is now passed in so the model
-   cannot recommend fungicides for bacterial diseases, or
-   chemical sprays for viral infections.
+  Safer chemical language, practical field advice,
+   professional wording, category-constrained recommendations.
 #}
 
-Generate treatment recommendations for:
+Generate professional treatment recommendations for a commercial farmer.
 
 Plant:    {{ plant_identified }}
-Disease:  {{ diagnosis.name if diagnosis else "Unknown" }}
+Condition: {{ diagnosis.name if diagnosis else "Unknown" }}
 Category: {{ disease_category | default("unknown") }}
 Severity: {{ diagnosis.severity if diagnosis else "unknown" }}
 
@@ -22,78 +21,112 @@ VERIFIED TREATMENT INFORMATION from knowledge base:
 {% endif %}
 
 {% if weather_data %}
-Current conditions:
+Current field conditions:
 - Temperature: {{ weather_data.temperature }}°C
 - Humidity: {{ weather_data.humidity }}%
 {% if weather_data.humidity > 80 %}
-⚠ High humidity — prioritise reducing moisture around plants.
+⚠ High humidity — prioritise reducing leaf wetness and improving airflow.
 {% endif %}
 {% if weather_data.temperature > 35 %}
-⚠ High temperature — apply treatments early morning or evening only.
+⚠ High temperature — apply any treatments during early morning or late evening only.
 {% endif %}
 {% endif %}
 
 {% if differential_diagnoses and differential_diagnoses|length > 1 %}
-Alternative diagnoses to keep in mind:
+Alternative conditions to monitor:
 {% for d in differential_diagnoses[1:] %}
 - {{ d.name }} ({{ d.probability }}% probability) — {{ d.category }}
 {% endfor %}
 {% endif %}
 
-━━━ STRICT CATEGORY RULES (MUST FOLLOW) ━━━
+━━ PROFESSIONAL WORDING RULES ━━
+
+LANGUAGE STANDARDS:
+✓ Use practical, field-applicable advice
+✓ Use qualified language: "consider applying", "monitor for", "consult your extension officer"
+✓ Reference "locally approved products" rather than specific brand names
+✓ Include safety notes where chemicals are mentioned
+✓ Avoid overconfident chemical claims
+✓ For severe/critical cases: recommend consulting an agricultural extension officer
+
+TREATMENT ACTION WORDING:
+✓ "Remove and destroy infected tissue — do not compost"
+✓ "Apply a locally approved fungicide according to label guidance"
+✓ "Improve plant spacing to enhance airflow and reduce humidity"
+✓ "Monitor the field twice weekly and record spread"
+✓ "Consult your nearest agrovet or extension officer for product availability"
+✗ NEVER say "spray X chemical at Y dose" without qualification
+✗ NEVER recommend a treatment that does not match the disease category
+
+━━ STRICT CATEGORY RULES (MUST FOLLOW) ━━
 
 {% if disease_category == "bacterial" %}
-BACTERIAL DISEASE RULES:
-✓ Use: copper-based bactericide (copper hydroxide, copper oxychloride)
-✓ Use: Remove and DESTROY infected material — do not compost
-✓ Use: Disinfect tools with bleach solution between plants
-✓ Use: Avoid overhead irrigation — bacteria spread in water splash
-✗ DO NOT recommend: fungicides (they do not work on bacteria)
-✗ DO NOT recommend: neem oil as the primary treatment for bacteria
+BACTERIAL DISEASE — TREATMENT RULES:
+✓ Remove and destroy infected plant material — do not compost
+✓ Apply copper-based bactericide (copper hydroxide or copper oxychloride) according to label
+✓ Disinfect cutting tools with 10% bleach solution between plants
+✓ Avoid overhead irrigation — bacteria spread rapidly via water splash
+✓ Improve field drainage to reduce standing water
+✗ DO NOT recommend fungicides — they are ineffective against bacteria
+✗ DO NOT recommend neem oil as primary treatment for bacterial infection
+
 {% elif disease_category == "fungal" %}
-FUNGAL DISEASE RULES:
-✓ Use: Appropriate fungicide for this specific fungus
-✓ Use: Improve air circulation to reduce humidity
-✓ Use: Remove infected leaves and destroy them
-✓ Use: Preventive fungicide rotation to avoid resistance
-✗ DO NOT recommend: bactericides
+FUNGAL DISEASE — TREATMENT RULES:
+✓ Remove and destroy infected leaves — bag and burn away from field
+✓ Apply a locally approved fungicide — rotate chemical groups to prevent resistance
+✓ Improve air circulation through pruning or adjusted plant spacing
+✓ Avoid wetting leaves during irrigation
+✓ Apply preventive fungicide at recommended intervals during high-risk periods
+✗ DO NOT recommend bactericides
+
 {% elif disease_category == "viral" %}
-VIRAL DISEASE RULES — READ CAREFULLY:
-✗ There is NO chemical cure for viral diseases
-✗ DO NOT recommend fungicides, bactericides, or general sprays
-✓ Focus: Remove and destroy infected plants immediately
-✓ Focus: Control the insect vector (aphids, whitefly, thrips)
-✓ Focus: Disinfect tools between plants
-✓ Advise: Plant resistant varieties in next season
-The farmer must understand: treating the symptoms will not eliminate the virus.
+VIRAL DISEASE — TREATMENT RULES:
+⚠ There is NO chemical cure for viral plant diseases
+✓ Remove and destroy severely infected plants immediately to prevent spread
+✓ Control insect vectors (aphids, whitefly, thrips) using appropriate insecticide
+✓ Disinfect tools between plants to avoid mechanical transmission
+✓ Advise farmer to source certified virus-free planting material next season
+✓ Consider resistant varieties for replanting
+✗ DO NOT recommend fungicides, bactericides, or general foliar sprays for the virus itself
+
 {% elif disease_category == "nutrient_deficiency" %}
-NUTRIENT DEFICIENCY RULES:
-✗ DO NOT recommend any pesticide — this is not a disease
-✓ Identify the specific deficient nutrient from symptoms
-✓ Check and correct soil pH first (most deficiencies are pH-related)
-✓ Apply the specific nutrient in the correct form and rate
-✓ Consider foliar spray for rapid correction
+NUTRIENT DEFICIENCY — TREATMENT RULES:
+⚠ This is a nutritional issue — pesticides will not help
+✓ First check and correct soil pH — most deficiencies are pH-related
+✓ Apply the specific deficient nutrient in the correct form and rate
+✓ Consider foliar application for rapid correction of acute deficiency
+✓ Conduct soil testing to confirm deficiency before applying amendments
+✓ Consult an extension officer for locally appropriate fertiliser recommendations
+✗ DO NOT recommend any pesticide
+
 {% elif disease_category == "abiotic_stress" %}
-ABIOTIC STRESS RULES:
-✗ DO NOT recommend any pesticide — this is environmental
-✓ Address the root cause (irrigation, drainage, shade, soil)
-✓ No chemical treatment will fix drought, heat, or waterlogging
+ABIOTIC STRESS — TREATMENT RULES:
+⚠ This is environmental stress — chemicals will not resolve it
+✓ Address the root cause: irrigation schedule, drainage, shade, or soil compaction
+✓ Adjust irrigation timing to avoid waterlogging or drought stress
+✓ Apply mulch to regulate soil moisture and temperature
+✓ Consult an agronomist if symptoms persist
+✗ DO NOT recommend any pesticide for abiotic stress
+
 {% elif disease_category == "insect" %}
-INSECT/PEST RULES:
-✓ Use: Appropriate insecticide or biological control
-✓ Use: Neem oil (effective for soft-bodied insects)
-✓ Use: Remove heavily infested leaves
-✗ DO NOT recommend: fungicides or bactericides
+INSECT / PEST — TREATMENT RULES:
+✓ Scout the field to confirm pest identity and infestation level before spraying
+✓ Apply neem oil solution for soft-bodied insects (aphids, mites, whitefly)
+✓ Use a locally approved insecticide if infestation is severe — follow label guidance
+✓ Remove and destroy heavily infested leaves to reduce pest load
+✓ Introduce biological controls where available (parasitic wasps, ladybirds)
+✓ Wear protective clothing when applying any pesticide
+✗ DO NOT recommend fungicides or bactericides for pest damage
 {% endif %}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {% if personality == "friendly" %}
-Use simple, encouraging language. Assume the farmer has basic tools.
+Use simple, encouraging language. Assume the farmer has basic tools and local agrovet access.
 {% elif personality == "formal" %}
-Use technical terminology with precise product names and dosages.
+Use precise technical terminology. Reference application rates and timing where appropriate.
 {% elif personality == "concise" %}
-List only the 3 most critical actions. One sentence each.
+List only the 3 most critical actions. One sentence each. No preamble.
 {% endif %}
 
 Respond ONLY with a valid JSON array. No markdown, no backticks, no extra text:
@@ -101,7 +134,7 @@ Respond ONLY with a valid JSON array. No markdown, no backticks, no extra text:
 [
   {
     "type": "immediate | organic | chemical | preventive",
-    "action": "short title",
-    "details": "specific instructions for THIS disease on THIS crop"
+    "action": "short professional title",
+    "details": "specific, practical instructions for THIS condition on THIS crop — use qualified, safe language"
   }
 ]
