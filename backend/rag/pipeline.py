@@ -41,17 +41,21 @@ Usage:
 
 import logging
 from typing import Optional
+
 from rag.preprocessing import preprocess_document
+
 from rag.vectorstore.collections import (
-    get_collection,
+    get_or_create_collection,
     store_chunks
 )
+
 from rag.retrieval.retriever import retrieve_chunks
 from rag.retrieval.evaluator import evaluate_retrieval
 from rag.retrieval.fallback import (
     handle_fallback,
     should_fallback
 )
+
 from models.sources import SourceReference
 from config import get_settings
 
@@ -66,58 +70,37 @@ class RAGPipeline:
     Provides two main methods:
         ingest_document — adds a PDF to ChromaDB
         search          — retrieves relevant chunks
-        
-    Example:
-        pipeline = RAGPipeline()
-        
-        # One-time ingestion
-        count = await pipeline.ingest_document(
-            "data/raw/cabi.pdf"
-        )
-        print(f"Stored {count} chunks")
-        
-        # Runtime search
-        results = await pipeline.search(
-            "yellow spots tomato leaf"
-        )
     """
 
     def __init__(self):
         """Initialise the RAG pipeline."""
         self.settings = get_settings()
-        self.collection = get_collection()
+
+        # FIX: ensure collection exists during ingestion
+        self.collection = get_or_create_collection()
+
         logger.info("RAGPipeline initialised")
 
-    # ── Document Ingestion ─────────────────────────────────
+    # ─────────────────────────────────────────────
+    # Document Ingestion
+    # ─────────────────────────────────────────────
 
     async def ingest_document(
-        self,
-        file_path: str
-    ) -> int:
+    self,
+    file_path: str,
+    crop: str = "general",
+) -> int:
         """
         Ingest a PDF document into ChromaDB.
-        
+
         Runs the complete preprocessing pipeline
         on the PDF and stores all resulting chunks
         in the ChromaDB collection.
-        
-        Args:
-            file_path: Path to PDF file to ingest
-            
-        Returns:
-            int: Number of chunks stored
-            
-        Example:
-            count = await pipeline.ingest_document(
-                "data/raw/cabi_crop_diseases.pdf"
-            )
-            print(f"Stored {count} chunks")
         """
-        logger.info(
-            f"Starting ingestion: {file_path}"
-        )
 
-        # Step 1 — Preprocess the PDF
+        logger.info(f"Starting ingestion: {file_path}")
+
+        # Step 1 — Preprocess PDF
         chunks = preprocess_document(file_path)
 
         if not chunks:
@@ -126,7 +109,9 @@ class RAGPipeline:
             )
             return 0
 
-        # Step 2 — Store chunks in ChromaDB
+        # Step 2 — Store chunks
+        for chunk in chunks:
+           chunk["crop"] = crop
         stored_count = store_chunks(
             chunks=chunks,
             collection=self.collection
@@ -140,7 +125,9 @@ class RAGPipeline:
 
         return stored_count
 
-    # ── Knowledge Search ───────────────────────────────────
+    # ─────────────────────────────────────────────
+    # Knowledge Retrieval
+    # ─────────────────────────────────────────────
 
     async def search(
         self,
@@ -148,39 +135,14 @@ class RAGPipeline:
         personality: str = "friendly"
     ) -> tuple[list[SourceReference], Optional[dict]]:
         """
-        Search the disease knowledge base for a query.
-        
-        Retrieves relevant chunks, evaluates their
-        quality, and returns either the results or
-        a fallback response if quality is too low.
-        
-        Args:
-            query: Search query from the vision tool
-            personality: For fallback message tone
-            
-        Returns:
-            tuple:
-                - list[SourceReference]: Retrieved chunks
-                  (empty list if fallback triggered)
-                - dict or None: Fallback response if
-                  triggered, None if search succeeded
-                  
-        Example:
-            sources, fallback = await pipeline.search(
-                "yellow spots tomato"
-            )
-            if fallback:
-                return fallback
-            for source in sources:
-                print(source.document_name)
+        Search the disease knowledge base.
         """
-        # Retrieve raw chunks from ChromaDB
+
+        # Retrieve raw chunks
         raw_chunks = await retrieve_chunks(
             query=query,
             top_k=self.settings.rag_top_k,
-            collection_name=(
-                self.settings.chroma_collection_name
-            )
+            collection_name=self.settings.chroma_collection_name
         )
 
         # Evaluate chunk quality
@@ -190,20 +152,22 @@ class RAGPipeline:
             query=query
         )
 
-        # Check if fallback needed
+        # Trigger fallback if results are weak
         if should_fallback(filtered_chunks):
+
             best_score = (
-                max(c["similarity_score"]
-                    for c in raw_chunks)
+                max(c["similarity_score"] for c in raw_chunks)
                 if raw_chunks else 0.0
             )
+
             fallback = handle_fallback(
                 confidence_score=best_score,
                 personality=personality
             )
+
             return [], fallback
 
-        # Convert to SourceReference models
+        # Convert results to SourceReference models
         sources = [
             SourceReference(
                 document_name=chunk["document_name"],
@@ -217,27 +181,23 @@ class RAGPipeline:
 
         return sources, None
 
+    # ─────────────────────────────────────────────
+    # Debug Stats
+    # ─────────────────────────────────────────────
+
     def get_collection_stats(self) -> dict:
         """
-        Get statistics about the ChromaDB collection.
-        
-        Useful for monitoring how many chunks
-        are stored and verifying ingestion worked.
-        
-        Returns:
-            dict: Stats containing chunk count
-                  and collection name.
-                  
-        Example:
-            stats = pipeline.get_collection_stats()
-            print(stats["total_chunks"])
+        Return statistics about the ChromaDB collection.
+        Useful to verify ingestion worked.
         """
+
         return {
-            "collection_name": (
-                self.settings.chroma_collection_name
-            ),
-            "total_chunks": self.collection.count(),
-            "persist_directory": (
+            "collection_name":
+                self.settings.chroma_collection_name,
+
+            "total_chunks":
+                self.collection.count(),
+
+            "persist_directory":
                 self.settings.chroma_persist_directory
-            )
         }

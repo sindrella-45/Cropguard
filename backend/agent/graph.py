@@ -108,6 +108,7 @@ def build_graph_v2():
     )
 
     graph.add_node("handle_error", handle_error)
+    graph.add_edge("handle_error", END)
 
     graph.add_edge("load_memory", "fetch_weather")
     graph.add_edge("fetch_weather", "identify_crop")
@@ -133,6 +134,7 @@ def build_graph_v2():
     )
 
     graph.add_node("handle_fallback", handle_fallback)
+    graph.add_edge("handle_fallback", END)
 
     graph.add_edge("detect_disease", "consistency_check")
 
@@ -178,6 +180,7 @@ async def run_agent(
     user_id: str = None,
     session_id: str = None,
     location: str = None,
+    language:       str  = "English", 
 ) -> dict:
 
     if not session_id:
@@ -194,6 +197,7 @@ async def run_agent(
         user_id=user_id,
         session_id=session_id,
         location=location,
+        language=language,               
     )
 
     try:

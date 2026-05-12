@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# CropGuard AI — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI-powered crop disease diagnosis platform built with Next.js 14, TypeScript, Tailwind CSS, and Framer Motion.
 
-Currently, two official plugins are available:
+## Getting Started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open [http://localhost:3000](http://localhost:3000)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Project Structure
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+cropguard-frontend/
+├── app/                    # Next.js App Router pages
+│   ├── page.tsx            # Public home page
+│   ├── auth/
+│   │   ├── login/page.tsx
+│   │   └── register/page.tsx
+│   ├── dashboard/page.tsx
+│   ├── diagnose/page.tsx
+│   ├── history/page.tsx
+│   ├── guides/page.tsx
+│   ├── feedback/page.tsx
+│   ├── settings/page.tsx
+│   ├── profile/page.tsx
+│   └── offline/page.tsx
+├── components/
+│   ├── ui/                 # Reusable UI primitives
+│   ├── layout/             # DashboardLayout (sidebar + nav)
+│   ├── home/               # Landing page sections
+│   ├── dashboard/          # Dashboard view
+│   ├── diagnose/           # Diagnose + results + chatbot
+│   ├── history/            # Diagnosis history table
+│   ├── guides/             # Crop guides
+│   ├── feedback/           # Feedback form with stars
+│   ├── settings/           # Settings page
+│   └── profile/            # Profile page
+├── lib/
+│   ├── store.ts            # Zustand global state (auth, toasts, diagnoses)
+│   ├── data.ts             # Static data (features, testimonials, bot responses)
+│   └── utils.ts            # Helper functions
+├── hooks/
+│   └── useOnlineStatus.ts  # Offline detection hook
+└── types/index.ts          # TypeScript interfaces
+```
+
+## Demo Login
+- Email: `farmer@example.com`  
+- Password: `password123`
+
+## Tech Stack
+- **Next.js 14** (App Router)
+- **TypeScript**
+- **Tailwind CSS**
+- **Framer Motion**
+- **Zustand** (state management)
+- **Lucide React** (icons)

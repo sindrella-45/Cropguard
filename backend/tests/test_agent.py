@@ -24,7 +24,7 @@ from agent.state import AgentState
 from agent.edges import (
     route_after_validation,
     route_after_detection,
-    route_after_fallback_check
+    route_after_rag
 )
 
 
@@ -272,7 +272,7 @@ class TestEdgeRouting:
         RAG confidence is too low.
         """
         valid_state.fallback_triggered = True
-        result = route_after_fallback_check(
+        result = route_after_rag(
             valid_state
         )
         assert result == "handle_fallback"
@@ -285,7 +285,7 @@ class TestEdgeRouting:
         when RAG retrieval succeeds.
         """
         valid_state.fallback_triggered = False
-        result = route_after_fallback_check(
+        result = route_after_rag(
             valid_state
         )
         assert result == "detect_disease"

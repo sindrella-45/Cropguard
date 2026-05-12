@@ -94,6 +94,7 @@ class AgentState(TypedDict, total=False):
     user_id:        Optional[str]
     session_id:     Optional[str]
     location:       Optional[str]
+    language:       Optional[str]         # "English" | "Swahili" | "Luganda" | "Runyankole" | "French" 
 
     # ── Memory ─────────────────────────────────────────────────────────
     # operator.add: safe against future parallel memory shards
@@ -165,6 +166,7 @@ def make_initial_state(
     user_id:        Optional[str] = None,
     session_id:     Optional[str] = None,
     location:       Optional[str] = None,
+    language:       Optional[str] = "English"
 ) -> AgentState:
     """
     Return a fully-initialised AgentState dict.
@@ -182,6 +184,7 @@ def make_initial_state(
         user_id=user_id,
         session_id=session_id,
         location=location,
+        language=language,
         # Memory
         past_diagnoses=[],
         history_summary=None,

@@ -13,11 +13,9 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# ── Rate limiting imports ──────────────────────────────────────────────────────
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-# ──────────────────────────────────────────────────────────────────────────────
 
 from config import get_settings
 from utils.logger import setup_logging
@@ -36,14 +34,8 @@ from models.requests import HealthCheck
 setup_logging(log_level="INFO")
 logger = logging.getLogger(__name__)
 
-# ── Create limiter ─────────────────────────────────────────────────────────────
-# One global limiter instance shared across the app.
-# The key_func determines what to rate-limit by — here it's the client IP.
 limiter = Limiter(key_func=get_remote_address)
-# ──────────────────────────────────────────────────────────────────────────────
 
-
-# ── Lifespan ───────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -76,8 +68,6 @@ async def lifespan(app: FastAPI):
     logger.info("CropGuard AI shutting down gracefully")
 
 
-# ── FastAPI app ────────────────────────────────────────────────────────────────
-
 app = FastAPI(
     title="CropGuard AI",
     description=(
@@ -91,17 +81,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ── Attach limiter to app ──────────────────────────────────────────────────────
-# This is REQUIRED — slowapi reads the limiter from app.state
 app.state.limiter = limiter
-
-# Register the 429 error handler so FastAPI returns a clean JSON response
-# instead of crashing when the rate limit is hit
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-# ── CORS ───────────────────────────────────────────────────────────────────────
 
 app.add_middleware(
     CORSMiddleware,
@@ -115,20 +96,16 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-
 # ── Routers ────────────────────────────────────────────────────────────────────
-
+# FIX: followup_router was registered twice (under "Follow-up" and "Analysis").
+# Removed duplicate — now registered once with both tags.
 app.include_router(auth_router,     prefix="/auth",   tags=["Authentication"])
 app.include_router(analyze_router,                    tags=["Analysis"])
 app.include_router(history_router,                    tags=["History"])
 app.include_router(feedback_router,                   tags=["Feedback"])
 app.include_router(tokens_router,                     tags=["Tokens"])
-app.include_router(followup_router,                   tags=["Follow-up"])
-app.include_router(followup_router,  tags=["Analysis"])
+app.include_router(followup_router,                   tags=["Follow-up", "Analysis"])
 
-
-
-# ── Health check ───────────────────────────────────────────────────────────────
 
 @app.get("/health", response_model=HealthCheck, tags=["Health"])
 async def health_check():
@@ -139,8 +116,6 @@ async def health_check():
         environment=settings.app_env
     )
 
-
-# ── Plugin endpoints ───────────────────────────────────────────────────────────
 
 @app.get("/plugins", tags=["Plugins"])
 async def get_plugins(current_user: dict = Depends(get_optional_user)):
@@ -164,8 +139,6 @@ async def toggle_plugin(
         "message": f"Plugin {'enabled' if new_state else 'disabled'}"
     }
 
-
-# ── Global exception handler ───────────────────────────────────────────────────
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc: Exception):

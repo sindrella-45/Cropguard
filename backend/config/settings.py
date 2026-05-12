@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     """Your Supabase anonymous/service key"""
 
     # ── Redis ────────────────────────────────────────────
-    redis_url: str = "redis://localhost:6379"
+    redis_enabled: bool = False
     """Redis connection URL for short-term memory"""
 
     # ── LangSmith Observability ──────────────────────────
@@ -53,6 +53,15 @@ class Settings(BaseSettings):
     # ── Weather API ──────────────────────────────────────
     weather_api_key: Optional[str] = None
     """OpenWeatherMap API key for weather tool"""
+
+    langchain_tracing_v2: bool | None = None
+    """Whether to enable LangChain tracing v2"""
+
+    eppo_api_token: str | None = None
+    """Eppo API token for feature flagging"""
+
+    crop_health_api_key: str | None = None
+    """API key for the Crop Health API"""
 
     # ── App ──────────────────────────────────────────────
     app_env: str = "development"

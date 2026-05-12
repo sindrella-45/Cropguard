@@ -1,4 +1,3 @@
-# backend/routes/analyze.py
 """
 Main disease analysis endpoint for CropGuard AI.
 Rate limited to 10 requests per minute per IP.
@@ -16,11 +15,7 @@ from utils.logger import log_request
 
 logger = logging.getLogger(__name__)
 
-# Local limiter reference — the actual limiter
-# instance lives in app.py and is attached to app.state.
-# This just creates the decorator correctly.
 limiter = Limiter(key_func=get_remote_address)
-
 router = APIRouter()
 
 
@@ -29,19 +24,13 @@ router = APIRouter()
     summary="Analyze a leaf image for crop diseases",
     tags=["Analysis"]
 )
-@limiter.limit("10/minute")   
+@limiter.limit("10/minute")
 async def analyze_leaf(
-    request: Request,                  
+    request: Request,
     body: AnalyzeRequest,
     current_user: dict = Depends(get_optional_user)
 ):
-    """
-    Main endpoint for crop disease detection.
-
-    Rate limited to 10 requests per minute per IP address.
-    Returns 429 Too Many Requests if the limit is exceeded.
-    """
-    user_id = current_user["id"] if current_user else None
+    user_id    = current_user["id"] if current_user else None
     session_id = str(uuid.uuid4())
 
     log_request(
@@ -51,9 +40,9 @@ async def analyze_leaf(
     )
 
     logger.info(
-        f"Analyze request received: "
-        f"model={body.selected_model}, "
-        f"personality={body.personality}, "
+        f"Analyze request: model={body.selected_model} "
+        f"personality={body.personality} "
+        f"language={body.language} "          # ← NEW
         f"authenticated={user_id is not None}"
     )
 
@@ -65,26 +54,17 @@ async def analyze_leaf(
             personality=body.personality,
             selected_model=body.selected_model,
             user_id=user_id,
-            session_id=session_id
+            session_id=session_id,
+            language=body.language,           # ← NEW
         )
 
         if result.get("error"):
-            logger.error(f"Agent returned error: {result.get('message')}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result.get("message", "Analysis failed. Please try again.")
+                detail=result.get("message", "Analysis failed.")
             )
 
-        logger.info(
-            f"Analysis complete: "
-            f"tokens={result.get('tokens_used', 0)}, "
-            f"cost=${result.get('cost_usd', 0):.4f}"
-        )
-
         result["session_id"] = session_id
-        # diagnosis_id is injected by graph.py from save_memory node
-        result["session_id"] = session_id
-        logger.info(f"diagnose_id in result: {result.get('diagnosis_id')} session_id: {session_id}")
         return result
 
     except HTTPException:

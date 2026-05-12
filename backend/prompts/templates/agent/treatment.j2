@@ -1,132 +1,125 @@
 {#
-   treatment.j2 — professional treatment generation.
-
-  Safer chemical language, practical field advice,
-   professional wording, category-constrained recommendations.
+  treatment.j2 — evidence-based treatment generation.
+  Forces the AI to use RAG-retrieved knowledge base content.
+  Category-constrained with Uganda/East Africa context.
 #}
 
-Generate professional treatment recommendations for a commercial farmer.
+Generate specific, evidence-based treatment recommendations for a {{ plant_identified }} farmer.
 
-Plant:    {{ plant_identified }}
-Condition: {{ diagnosis.name if diagnosis else "Unknown" }}
-Category: {{ disease_category | default("unknown") }}
-Severity: {{ diagnosis.severity if diagnosis else "unknown" }}
+DIAGNOSIS:
+- Plant:    {{ plant_identified }}
+- Disease:  {{ diagnosis.name if diagnosis else "Unknown" }}
+- Category: {{ disease_category | default("unknown") }}
+- Severity: {{ diagnosis.severity if diagnosis else "unknown" }}
+- Description: {{ diagnosis.description if diagnosis else "" }}
 
 {% if retrieved_context %}
-VERIFIED TREATMENT INFORMATION from knowledge base:
+━━ KNOWLEDGE BASE — YOU MUST USE THIS INFORMATION ━━
+The following is verified information from authoritative agricultural PDFs.
+Base your treatment recommendations DIRECTLY on this content.
+Quote specific products, rates, and timings mentioned in these sources.
+Do NOT ignore this information — it must shape your recommendations.
+
 {% for chunk in retrieved_context %}
-[Source: {{ chunk.document_name }} | Relevance: {{ chunk.similarity_score }}]
+━━ Source: {{ chunk.document_name }} (Relevance: {{ "%.0f"|format(chunk.similarity_score * 100) }}%) ━━
 {{ chunk.chunk_text }}
+
 {% endfor %}
+━━ END KNOWLEDGE BASE ━━
+{% else %}
+⚠ No knowledge base content retrieved. Use your training knowledge about
+{{ diagnosis.name if diagnosis else "this disease" }} on {{ plant_identified }} in East Africa.
 {% endif %}
 
 {% if weather_data %}
-Current field conditions:
+Current field conditions (factor these into timing recommendations):
 - Temperature: {{ weather_data.temperature }}°C
 - Humidity: {{ weather_data.humidity }}%
 {% if weather_data.humidity > 80 %}
-⚠ High humidity — prioritise reducing leaf wetness and improving airflow.
+⚠ HIGH HUMIDITY — prioritise reducing leaf wetness. Recommend early morning application.
 {% endif %}
 {% if weather_data.temperature > 35 %}
-⚠ High temperature — apply any treatments during early morning or late evening only.
+⚠ HIGH TEMPERATURE — recommend applying treatments at dawn or dusk only.
 {% endif %}
 {% endif %}
 
 {% if differential_diagnoses and differential_diagnoses|length > 1 %}
-Alternative conditions to monitor:
+Also monitor for these alternative conditions:
 {% for d in differential_diagnoses[1:] %}
 - {{ d.name }} ({{ d.probability }}% probability) — {{ d.category }}
 {% endfor %}
 {% endif %}
 
-━━ PROFESSIONAL WORDING RULES ━━
+━━ STRICT TREATMENT RULES ━━
 
-LANGUAGE STANDARDS:
-✓ Use practical, field-applicable advice
-✓ Use qualified language: "consider applying", "monitor for", "consult your extension officer"
-✓ Reference "locally approved products" rather than specific brand names
-✓ Include safety notes where chemicals are mentioned
-✓ Avoid overconfident chemical claims
-✓ For severe/critical cases: recommend consulting an agricultural extension officer
-
-TREATMENT ACTION WORDING:
-✓ "Remove and destroy infected tissue — do not compost"
-✓ "Apply a locally approved fungicide according to label guidance"
-✓ "Improve plant spacing to enhance airflow and reduce humidity"
-✓ "Monitor the field twice weekly and record spread"
-✓ "Consult your nearest agrovet or extension officer for product availability"
-✗ NEVER say "spray X chemical at Y dose" without qualification
-✗ NEVER recommend a treatment that does not match the disease category
-
-━━ STRICT CATEGORY RULES (MUST FOLLOW) ━━
-
-{% if disease_category == "bacterial" %}
-BACTERIAL DISEASE — TREATMENT RULES:
-✓ Remove and destroy infected plant material — do not compost
-✓ Apply copper-based bactericide (copper hydroxide or copper oxychloride) according to label
-✓ Disinfect cutting tools with 10% bleach solution between plants
-✓ Avoid overhead irrigation — bacteria spread rapidly via water splash
-✓ Improve field drainage to reduce standing water
-✗ DO NOT recommend fungicides — they are ineffective against bacteria
-✗ DO NOT recommend neem oil as primary treatment for bacterial infection
-
-{% elif disease_category == "fungal" %}
-FUNGAL DISEASE — TREATMENT RULES:
-✓ Remove and destroy infected leaves — bag and burn away from field
-✓ Apply a locally approved fungicide — rotate chemical groups to prevent resistance
+{% if disease_category == "fungal" %}
+FUNGAL DISEASE:
+✓ Recommend specific fungicide active ingredients mentioned in the knowledge base above
+✓ Include application frequency and timing from the knowledge base
+✓ Remove and destroy infected leaves — bag and burn, never compost
 ✓ Improve air circulation through pruning or adjusted plant spacing
-✓ Avoid wetting leaves during irrigation
-✓ Apply preventive fungicide at recommended intervals during high-risk periods
+✓ Rotate fungicide groups to prevent resistance development
 ✗ DO NOT recommend bactericides
 
+{% elif disease_category == "bacterial" %}
+BACTERIAL DISEASE:
+✓ Copper-based bactericide (copper hydroxide or copper oxychloride) — apply per label
+✓ Remove and destroy ALL infected material — do not compost
+✓ Disinfect cutting tools with 10% bleach solution between plants
+✓ Avoid overhead irrigation — bacteria spread via water splash
+✗ DO NOT recommend fungicides — ineffective against bacteria
+
 {% elif disease_category == "viral" %}
-VIRAL DISEASE — TREATMENT RULES:
-⚠ There is NO chemical cure for viral plant diseases
-✓ Remove and destroy severely infected plants immediately to prevent spread
-✓ Control insect vectors (aphids, whitefly, thrips) using appropriate insecticide
-✓ Disinfect tools between plants to avoid mechanical transmission
-✓ Advise farmer to source certified virus-free planting material next season
-✓ Consider resistant varieties for replanting
-✗ DO NOT recommend fungicides, bactericides, or general foliar sprays for the virus itself
+VIRAL DISEASE:
+⚠ NO chemical cure exists for viral diseases
+✓ Remove and destroy severely infected plants IMMEDIATELY
+✓ Control insect vectors (aphids, whitefly, thrips) with appropriate insecticide
+✓ Disinfect tools between plants to prevent mechanical transmission
+✓ Source certified virus-free planting material for next season
+✗ DO NOT recommend fungicides or bactericides for the virus itself
 
 {% elif disease_category == "nutrient_deficiency" %}
-NUTRIENT DEFICIENCY — TREATMENT RULES:
-⚠ This is a nutritional issue — pesticides will not help
-✓ First check and correct soil pH — most deficiencies are pH-related
-✓ Apply the specific deficient nutrient in the correct form and rate
-✓ Consider foliar application for rapid correction of acute deficiency
-✓ Conduct soil testing to confirm deficiency before applying amendments
-✓ Consult an extension officer for locally appropriate fertiliser recommendations
+NUTRIENT DEFICIENCY:
+⚠ Pesticides will NOT help — this is a nutritional issue
+✓ Check and correct soil pH first — most deficiencies are pH-related
+✓ Apply the specific deficient nutrient — reference knowledge base for rates
+✓ Consider foliar application for rapid correction
+✓ Conduct soil testing to confirm before applying amendments
 ✗ DO NOT recommend any pesticide
 
 {% elif disease_category == "abiotic_stress" %}
-ABIOTIC STRESS — TREATMENT RULES:
-⚠ This is environmental stress — chemicals will not resolve it
-✓ Address the root cause: irrigation schedule, drainage, shade, or soil compaction
-✓ Adjust irrigation timing to avoid waterlogging or drought stress
+ABIOTIC STRESS:
+⚠ Chemicals will NOT resolve environmental stress
+✓ Address root cause: irrigation, drainage, shade, or soil compaction
 ✓ Apply mulch to regulate soil moisture and temperature
-✓ Consult an agronomist if symptoms persist
-✗ DO NOT recommend any pesticide for abiotic stress
+✓ Adjust irrigation timing to avoid waterlogging or drought stress
+✗ DO NOT recommend any pesticide
 
 {% elif disease_category == "insect" %}
-INSECT / PEST — TREATMENT RULES:
-✓ Scout the field to confirm pest identity and infestation level before spraying
-✓ Apply neem oil solution for soft-bodied insects (aphids, mites, whitefly)
-✓ Use a locally approved insecticide if infestation is severe — follow label guidance
+INSECT / PEST:
+✓ Scout field to confirm pest identity and infestation level first
+✓ Apply neem oil (20ml/litre) for soft-bodied insects — safe and locally available
+✓ Use locally approved insecticide for severe infestations — follow label guidance
 ✓ Remove and destroy heavily infested leaves to reduce pest load
-✓ Introduce biological controls where available (parasitic wasps, ladybirds)
-✓ Wear protective clothing when applying any pesticide
+✓ Introduce biological controls where available
 ✗ DO NOT recommend fungicides or bactericides for pest damage
 {% endif %}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━ QUALITY REQUIREMENTS ━━
+✓ Give 5-6 treatments — mix of immediate, organic, chemical, and preventive types
+✓ Be SPECIFIC — use product types, application rates, and timings from the knowledge base
+✓ Reference Uganda/East Africa context — mention agrovets, extension officers, NARO
+✓ Each treatment must be directly relevant to {{ diagnosis.name if diagnosis else "this disease" }}
+✗ Do NOT give generic farming advice unrelated to this specific disease
+✗ Do NOT repeat the same advice in different words
 
 {% if personality == "friendly" %}
-Use simple, encouraging language. Assume the farmer has basic tools and local agrovet access.
+Use simple, encouraging language. Assume the farmer has basic tools and agrovet access.
+Mention where to get products (local agrovet, extension officer, NARO).
 {% elif personality == "formal" %}
-Use precise technical terminology. Reference application rates and timing where appropriate.
+Use precise technical terminology. Include application rates and timing where known.
 {% elif personality == "concise" %}
-List only the 3 most critical actions. One sentence each. No preamble.
+Give exactly 5 treatments. One sentence per details field. Be direct.
 {% endif %}
 
 Respond ONLY with a valid JSON array. No markdown, no backticks, no extra text:
@@ -134,7 +127,7 @@ Respond ONLY with a valid JSON array. No markdown, no backticks, no extra text:
 [
   {
     "type": "immediate | organic | chemical | preventive",
-    "action": "short professional title",
-    "details": "specific, practical instructions for THIS condition on THIS crop — use qualified, safe language"
+    "action": "specific short title (e.g. 'Apply Copper Oxychloride Fungicide')",
+    "details": "Specific instructions referencing the knowledge base content — include product type, rate, timing, and safety note where relevant"
   }
 ]
