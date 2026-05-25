@@ -251,12 +251,23 @@ export const feedbackApi = {
     comment?: string;
     was_accurate?: boolean;
   }): Promise<FeedbackResponse> {
+
     const res = await fetch(`${BASE_URL}/feedback`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(data),
     });
-    return handleResponse<FeedbackResponse>(res);
+
+    const body = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(
+        body?.detail ||
+        "Failed to submit feedback."
+      );
+    }
+
+    return body;
   },
 
   async getSummary(): Promise<{
@@ -264,12 +275,18 @@ export const feedbackApi = {
     average_rating: number;
     accuracy_rate: number;
   }> {
-    const res = await fetch(`${BASE_URL}/feedback/summary`, {
-      headers: authHeaders(),
-    });
+
+    const res = await fetch(
+      `${BASE_URL}/feedback/summary`,
+      {
+        headers: authHeaders(),
+      }
+    );
+
     return handleResponse(res);
   },
 };
+
 
 // ── Health check ──────────────────────────────────────────────────────────────
 

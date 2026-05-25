@@ -70,7 +70,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>()(
-  persist(
+  persist<AppState>(
     (set) => ({
       // ── Auth ──────────────────────────────────────────────────────────────
       user: null,
