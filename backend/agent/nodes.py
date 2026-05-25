@@ -47,9 +47,41 @@ from prompts import render_prompt
 from utils.costs import calculate_cost
 from utils.image import validate_image
 
+
 logger = logging.getLogger(__name__)
 
-KNOWN_CROPS = ["coffee", "tea", "cocoa", "cotton", "sunflower"]
+KNOWN_CROPS = [
+    "maize",
+    "beans",
+    "cassava",
+    "banana",
+    "tomato",
+    "potato",
+    "rice",
+    "coffee",
+    "tea",
+    "cocoa",
+    "cotton",
+    "sunflower",
+    "sugarcane",
+    "soybean",
+    "groundnut",
+    "wheat",
+    "onion",
+    "cabbage",
+    "pepper",
+    "cowpea"
+]
+
+def extract_keywords(text: str):
+    keywords = []
+    for word in [
+        "yellow", "spots", "wilting", "holes", "curling",
+        "black", "white", "rust", "rot", "dry"
+    ]:
+        if word in text.lower():
+            keywords.append(word)
+    return keywords
 
 
 def _parse_json(text: str):
@@ -226,12 +258,14 @@ async def identify_crop(state: AgentState) -> dict[str, Any]:
 
         logger.info(f"Crop identified: '{crop}' ({confidence}%) — {reasoning}")
 
-        if confidence < 60:
+        if confidence < 45:
             logger.warning(f"Low crop confidence {confidence}% — using 'general'")
             return {
                 "crop_identified":         "general",
                 "crop_confidence":         confidence,
                 "crop_needs_confirmation": True,
+                "fallback_triggered": True, 
+
                 "tokens_used": state["tokens_used"] + tokens,
                 "cost_usd":    state["cost_usd"] + cost,
             }
@@ -292,6 +326,8 @@ async def describe_symptoms(state: AgentState) -> dict[str, Any]:
 
         return {
             "symptom_description": raw,
+            "symptom_keywords": extract_keywords(raw),
+
             "tokens_used":         state["tokens_used"] + tokens,
             "cost_usd":            state["cost_usd"] + cost,
         }
@@ -319,6 +355,8 @@ async def lookup_disease_node(state: AgentState) -> dict[str, Any]:
     try:
         sources = await lookup_disease(
             visual_description=state.get("symptom_description") or "",
+            keywords=state.get("symptom_keywords", []),
+
             plant_type=state.get("plant_type"),
             crop=effective_crop,
         )
@@ -350,7 +388,11 @@ async def detect_disease(state: AgentState) -> dict[str, Any]:
         user_prompt = render_prompt(
             "agent/disease_detection.j2",
             visual_analysis=state.get("symptom_description") or "",
-            retrieved_context=state["retrieved_sources"],
+            retrieved_context=sorted(
+    state.get("retrieved_sources", []),
+    key=lambda x: x.get("similarity_score", 0),
+    reverse=True
+)[:5],
             plant_type=crop,
             crop_confidence=crop_conf,
             personality=state["personality"],
@@ -487,10 +529,15 @@ async def run_consistency_check(state: AgentState) -> dict[str, Any]:
     )
 
     current_diagnosis = state["diagnosis"]
-    updated_diagnosis = (
-        current_diagnosis.copy(update={"confidence_score": calibrated})
-        if current_diagnosis else None
-    )
+    updated_diagnosis = None
+
+    if current_diagnosis:
+       updated_diagnosis = current_diagnosis.copy(update={
+        "confidence_score": calibrated,
+        "consistency_penalty": result["confidence_penalty"],
+        "is_reliable": result["confidence_penalty"] < 20  
+    })
+    
 
     return {
         "consistency_warnings":  result["warnings"],
@@ -498,6 +545,98 @@ async def run_consistency_check(state: AgentState) -> dict[str, Any]:
         "calibrated_confidence": calibrated,
         "diagnosis":             updated_diagnosis,
     }
+
+# ── Node 8b: Verification Layer ─────────────────────────────────────────────
+
+async def verify_diagnosis(state: AgentState) -> dict[str, Any]:
+    """
+    Second-pass verification layer.
+
+    Purpose:
+    - reduce hallucinations
+    - ensure diagnosis matches evidence
+    - validate RAG support
+    """
+
+    logger.info("Node 8b: Verifying diagnosis")
+
+    try:
+        diagnosis = state.get("diagnosis")
+        differential = state.get("differential_diagnoses", [])
+        sources = state.get("retrieved_sources", [])
+
+        if not diagnosis or not differential:
+            return {
+                "verification_passed": False,
+                "verification_notes": ["No diagnosis available for verification"]
+            }
+
+        primary = differential[0]
+
+        disease_name = primary.get("name", "").lower()
+
+        notes = []
+        score = 0
+
+        # ── 1. Verify disease appears in retrieved evidence ────────────
+        evidence_match = False
+
+        for s in sources:
+            text = str(s).lower()
+
+            if disease_name in text:
+                evidence_match = True
+                score += 1
+                break
+
+        if not evidence_match:
+            notes.append(
+                "Diagnosis was weakly supported by retrieved knowledge base evidence"
+            )
+
+        # ── 2. Verify confidence calibration ───────────────────────────
+        confidence = state.get("calibrated_confidence", 0)
+
+        if confidence < 40:
+            notes.append(
+                "Model confidence is low for this diagnosis"
+            )
+
+        else:
+            score += 1
+
+        # ── 3. Verify crop reliability ────────────────────────────────
+        crop_conf = state.get("crop_confidence", 0)
+
+        if crop_conf < 60:
+            notes.append(
+                "Crop identification confidence was low"
+            )
+
+        else:
+            score += 1
+
+        # ── Final decision ────────────────────────────────────────────
+        passed = score >= 2
+
+        logger.info(
+            f"Verification result: passed={passed} score={score}"
+        )
+
+        return {
+            "verification_passed": passed,
+            "verification_notes": notes,
+        }
+
+    except Exception as e:
+        logger.error(f"Verification failed: {e}")
+
+        return {
+            "verification_passed": False,
+            "verification_notes": [
+                f"Verification failed: {str(e)}"
+            ]
+        }
 
 
 # ── Node 9a: Healthy Path ──────────────────────────────────────────────────────

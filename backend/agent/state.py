@@ -132,6 +132,8 @@ class AgentState(TypedDict, total=False):
 
     # ── Calibrated Confidence ──────────────────────────────────────────
     calibrated_confidence: Optional[float]
+    verification_passed: Optional[bool]
+    verification_notes:  Annotated[list[str], operator.add]
 
     # ── Treatments / Prevention ────────────────────────────────────────
     # _replace: each is owned by exactly one node
@@ -205,6 +207,8 @@ def make_initial_state(
         consistency_penalty=0,
         diagnosis=None,
         calibrated_confidence=None,
+        verification_passed=None,
+        verification_notes=[],
         # Treatments
         treatments=[],
         prevention_tips=[],

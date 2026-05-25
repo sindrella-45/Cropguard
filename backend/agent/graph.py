@@ -12,7 +12,7 @@ from agent.nodes import (
     lookup_disease_node, detect_disease,
     run_consistency_check,
     healthy_path, treatment_path,
-    format_response, save_memory,
+    format_response, save_memory,verify_diagnosis,
 )
 
 from agent.edges import (
@@ -89,6 +89,7 @@ def build_graph_v2():
     graph.add_node("lookup_disease", lookup_disease_node)
     graph.add_node("detect_disease", detect_disease)
     graph.add_node("consistency_check", run_consistency_check)
+    graph.add_node("verify_diagnosis", verify_diagnosis)
     graph.add_node("healthy_path", healthy_path)
     graph.add_node("treatment_path", treatment_path)
     graph.add_node("format_response", format_response)
@@ -137,9 +138,11 @@ def build_graph_v2():
     graph.add_edge("handle_fallback", END)
 
     graph.add_edge("detect_disease", "consistency_check")
+    graph.add_edge("consistency_check", "verify_diagnosis")
 
+    
     graph.add_conditional_edges(
-        "consistency_check",
+    "verify_diagnosis",
         route_after_detection,
         {
             "healthy": "healthy_path",
