@@ -1,29 +1,38 @@
-# Dependencies
-node_modules/
-.next/
+# ── Frontend ──────────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/.env*.local
+frontend/dist/
+frontend/out/
 
-# Environment
+# ── Backend ───────────────────────────────────────────────
+backend/.venv/
+backend/.env
+backend/chroma_db/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+**/*.pyc
+backend/data/processed/
+
+# ── Root env files ────────────────────────────────────────
 .env
 .env.local
 .env.production
+*.env
 
-# Python
-__pycache__/
-*.pyc
-venv/
-chroma_db/
+# ── OS ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Data
-backend/data/raw/*.pdf
-backend/data/processed/
-
-# IDE
+# ── Editor ────────────────────────────────────────────────
 .vscode/
 .idea/
-.DS_Store
+*.swp
+*.swo
 
-# Testing
-.pytest_cache/
-coverage/
-```
-
+# ── Logs ──────────────────────────────────────────────────
+*.log
+npm-debug.log*
