@@ -36,9 +36,27 @@ export interface CacheItem {
 }
 
 const DEFAULT_CACHE: CacheItem[] = [
-  { key: 'disease-db',  label: 'Disease Database', icon: '🦠', sizeLabel: '200+ diseases · 45 MB', downloaded: false },
-  { key: 'crop-guides', label: 'Crop Guides',       icon: '📚', sizeLabel: '48 guides · 12 MB',    downloaded: false },
-  { key: 'ai-model',    label: 'AI Lite Model',     icon: '🤖', sizeLabel: 'Compact model · 68 MB', downloaded: false },
+  {
+    key: 'disease-db',
+    label: 'Disease Database',
+    icon: '🦠',
+    sizeLabel: '200+ diseases · 45 MB',
+    downloaded: false,
+  },
+  {
+    key: 'crop-guides',
+    label: 'Crop Guides',
+    icon: '📚',
+    sizeLabel: '48 guides · 12 MB',
+    downloaded: false,
+  },
+  {
+    key: 'ai-model',
+    label: 'AI Lite Model',
+    icon: '🤖',
+    sizeLabel: 'Compact model · 68 MB',
+    downloaded: false,
+  },
 ];
 
 interface AppState {
@@ -55,65 +73,104 @@ interface AppState {
   isOnline: boolean;
   setOnline: (v: boolean) => void;
 
-  // Diagnoses — starts EMPTY, filled from real backend
+  // Diagnoses
   diagnoses: Diagnosis[];
   addDiagnosis: (d: Diagnosis) => void;
   setDiagnoses: (d: Diagnosis[]) => void;
 
-  // Settings — persisted to localStorage
+  // Settings
   settings: AppSettings;
-  updateSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
+  updateSetting: <K extends keyof AppSettings>(
+    key: K,
+    value: AppSettings[K]
+  ) => void;
 
-  // Offline cache state
+  // Offline cache
   cacheItems: CacheItem[];
   setCacheDownloaded: (key: string, downloaded: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
-  persist<AppState>(
+  persist(
     (set) => ({
       // ── Auth ──────────────────────────────────────────────────────────────
       user: null,
+
       setUser: (user) => set({ user }),
 
       // ── Toasts ────────────────────────────────────────────────────────────
       toasts: [],
+
       addToast: (message, type = 'info') => {
-        const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-        set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
-        setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3500);
+        const id =
+          Date.now().toString(36) +
+          Math.random().toString(36).slice(2);
+
+        set((s) => ({
+          toasts: [...s.toasts, { id, message, type }],
+        }));
+
+        setTimeout(() => {
+          set((s) => ({
+            toasts: s.toasts.filter((t) => t.id !== id),
+          }));
+        }, 3500);
       },
-      removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+
+      removeToast: (id) =>
+        set((s) => ({
+          toasts: s.toasts.filter((t) => t.id !== id),
+        })),
 
       // ── Network ───────────────────────────────────────────────────────────
       isOnline: true,
+
       setOnline: (isOnline) => set({ isOnline }),
 
-      // ── Diagnoses — NO mock data ──────────────────────────────────────────
+      // ── Diagnoses ─────────────────────────────────────────────────────────
       diagnoses: [],
-      addDiagnosis: (d) => set((s) => ({ diagnoses: [d, ...s.diagnoses] })),
+
+      addDiagnosis: (d) =>
+        set((s) => ({
+          diagnoses: [d, ...s.diagnoses],
+        })),
+
       setDiagnoses: (diagnoses) => set({ diagnoses }),
 
       // ── Settings ──────────────────────────────────────────────────────────
       settings: DEFAULT_SETTINGS,
+
       updateSetting: (key, value) =>
-        set((s) => ({ settings: { ...s.settings, [key]: value } })),
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            [key]: value,
+          },
+        })),
 
       // ── Offline cache ─────────────────────────────────────────────────────
       cacheItems: DEFAULT_CACHE,
+
       setCacheDownloaded: (key, downloaded) =>
         set((s) => ({
           cacheItems: s.cacheItems.map((c) =>
             c.key === key
-              ? { ...c, downloaded, downloadedAt: downloaded ? new Date().toISOString() : undefined }
+              ? {
+                  ...c,
+                  downloaded,
+                  downloadedAt: downloaded
+                    ? new Date().toISOString()
+                    : undefined,
+                }
               : c
           ),
         })),
     }),
     {
       name: 'cropguard-store',
-      // Persist user, diagnoses, settings and cache — never toasts
-      partialize: (s) => ({
+
+      // Persist only selected state
+      partialize: (s): Partial<AppState> => ({
         user: s.user,
         diagnoses: s.diagnoses,
         settings: s.settings,
