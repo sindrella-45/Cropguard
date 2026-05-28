@@ -1,32 +1,44 @@
 "use client";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Camera, Brain, Globe } from "lucide-react";
+import { ShieldCheck, Zap, Target, Clock } from "lucide-react";
 
 const features = [
   {
-    icon: <Camera size={22} />,
-    title: "Photograph & Diagnose",
+    icon: <ShieldCheck size={24} className="text-green-600" />,
+    bg: "bg-green-50",
+    title: "Enterprise-Grade Accuracy",
     description:
-      "Point your phone at an affected leaf and get an instant AI diagnosis. Our validator rejects blurry or non-plant images before processing begins.",
-    tag: "Image Analysis",
-    color: "#2D6A2D",
+      "Every diagnosis is cross-referenced with verified agricultural PDFs. Confidence is calibrated from retrieval quality — not self-reported by the AI.",
+    size: "large",
+    dark: false,
   },
   {
-    icon: <Brain size={22} />,
-    title: "Differential Diagnosis",
+    icon: <Zap size={24} className="text-amber-600" />,
+    bg: "bg-amber-50",
+    title: "Instant Action",
     description:
-      "Get the top 3 most likely explanations — fungal disease, nutrient deficiency, or pest damage — with supporting evidence and an honest confidence score.",
-    tag: "AI Reasoning",
-    color: "#C8A84B",
+      "Stop guessing. Get specific treatment plans immediately after diagnosis — grounded in locally available East African products.",
+    size: "small",
+    dark: false,
   },
   {
-    icon: <Globe size={22} />,
+    icon: <Target size={24} className="text-white" />,
+    bg: "bg-green-600",
     title: "East Africa First",
     description:
-      "Built for Uganda and East African farming conditions. Treatments reference locally available products. Supports English, Swahili, Luganda, French and Runyankole.",
-    tag: "Regional Focus",
-    color: "#5CB85C",
+      "Built for Uganda and East African conditions. Supports Luganda, Swahili, French and Runyankole.",
+    size: "small",
+    dark: true,
+  },
+  {
+    icon: <Clock size={24} className="text-green-600" />,
+    bg: "bg-green-50",
+    title: "Track Your History",
+    description:
+      "Save all your diagnoses, monitor crop recovery over time, and view past treatments and prevention tips anytime — even offline.",
+    size: "large",
+    dark: false,
   },
 ];
 
@@ -35,73 +47,51 @@ export function FeaturesSection() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="features" className="bg-[#050f05] py-20 px-6 md:px-10">
+    <section id="features" className="bg-gray-50 py-20 px-6 md:px-10">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7 }}
-          className="text-center mb-14"
+          transition={{ duration: 0.6 }}
+          className="mb-10"
         >
-          <span className="inline-block text-[#C8A84B] text-xs font-semibold tracking-[0.2em] uppercase mb-4">
+          <span className="text-green-600 text-xs font-bold uppercase tracking-widest">
             Why CropGuard AI
           </span>
-          <h2
-            className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
-            Built for the realities of{" "}
-            <span
-              className="text-transparent bg-clip-text"
-              style={{ backgroundImage: "linear-gradient(135deg, #5CB85C, #C8A84B)" }}
-            >
-              African smallholder farming
-            </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 leading-tight max-w-xl">
+            Built for the realities of African farming
           </h2>
-          <p className="text-white/50 text-base max-w-xl mx-auto leading-relaxed">
-            Every decision was made with a Ugandan farmer in mind — from how
-            confidence is calculated to what treatments are suggested.
-          </p>
         </motion.div>
 
-        {/* 3 feature cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {features.map(({ icon, title, description, tag, color }, i) => (
+        {/* Bento grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {features.map(({ icon, bg, title, description, dark }, i) => (
             <motion.div
               key={title}
-              initial={{ opacity: 0, y: 32 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="group relative rounded-2xl p-6 border border-white/8 hover:border-white/20 transition-all duration-300"
-              style={{ background: "rgba(255,255,255,0.03)" }}
+              transition={{ duration: 0.5, delay: i * 0.08 }}
+              className={`relative rounded-2xl p-8 border transition-all duration-300 hover:shadow-lg ${
+                dark
+                  ? "bg-gray-900 border-gray-800 text-white"
+                  : "bg-white border-gray-100 text-gray-900"
+              }`}
             >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
-                style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}
-              >
+              {/* Icon */}
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 ${
+                dark ? "bg-green-600" : bg
+              }`}>
                 {icon}
               </div>
-              <span
-                className="text-[10px] font-bold tracking-widest uppercase mb-3 block"
-                style={{ color: `${color}cc` }}
-              >
-                {tag}
-              </span>
-              <h3
-                className="text-white font-bold text-lg mb-3"
-                style={{ fontFamily: "'Fraunces', serif" }}
-              >
+
+              <h3 className={`font-bold text-xl mb-3 ${dark ? "text-white" : "text-gray-900"}`}>
                 {title}
               </h3>
-              <p className="text-white/50 text-sm leading-relaxed">{description}</p>
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{
-                  background: `radial-gradient(ellipse at 30% 30%, ${color}08 0%, transparent 70%)`,
-                }}
-              />
+              <p className={`text-sm leading-relaxed ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                {description}
+              </p>
             </motion.div>
           ))}
         </div>
