@@ -8,6 +8,8 @@ const links = [
   { label: "Home",         href: "#" },
   { label: "Features",     href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
+  { label: "Guides",       href: "/guides" },
+  { label: "About Us",     href: "#" },
 ];
 
 export function PublicNav() {
@@ -24,51 +26,53 @@ export function PublicNav() {
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100"
-          : "bg-white"
+          ? "bg-white/97 backdrop-blur-md shadow-sm border-b border-gray-100"
+          : "bg-white border-b border-gray-100"
       }`}>
-        <div className="max-w-6xl mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 md:px-10 py-3.5 flex items-center justify-between">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 no-underline">
             <div className="w-9 h-9 bg-green-600 rounded-lg flex items-center justify-center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z" stroke="white" strokeWidth="2"/>
-                <path d="M8 12C10 8 14 8 16 12" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                <circle cx="12" cy="12" r="2" fill="white"/>
+                <path d="M12 3C8 3 4 7 4 12C4 17 8 21 12 21C16 21 20 17 20 12C20 7 16 3 12 3Z" fill="white" fillOpacity="0.3"/>
+                <path d="M7 12C9 7 15 7 17 12" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+                <circle cx="12" cy="13" r="2.5" fill="white"/>
               </svg>
             </div>
             <div>
               <div className="font-bold text-gray-900 text-sm leading-tight">CropGuard AI</div>
-              <div className="text-gray-400 text-[10px] leading-tight">
-                Scan your crops. Get solutions.
-              </div>
+              <div className="text-gray-400 text-[10px] leading-tight">Smart Crop Protection</div>
             </div>
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
-            {links.map((l) => (
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-7">
+            {links.map((l, i) => (
               <a
                 key={l.label}
                 href={l.href}
-                className="text-sm text-gray-600 hover:text-green-600 font-medium transition-colors no-underline"
+                className={`text-sm font-medium transition-colors no-underline pb-0.5 ${
+                  i === 0
+                    ? "text-green-600 border-b-2 border-green-600"
+                    : "text-gray-600 hover:text-green-600 border-b-2 border-transparent hover:border-green-200"
+                }`}
               >
                 {l.label}
               </a>
             ))}
           </div>
 
-          {/* Desktop CTA */}
+          {/* Desktop CTA buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link href="/auth/login" className="no-underline">
-              <button className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors px-4 py-2">
-                Login
+              <button className="text-sm font-semibold text-gray-700 hover:text-gray-900 px-5 py-2.5 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-200">
+                Log In
               </button>
             </Link>
             <Link href="/auth/register" className="no-underline">
-              <button className="text-sm bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 shadow-sm">
-                Get Started Free
+              <button className="text-sm font-semibold bg-green-700 hover:bg-green-800 text-white px-5 py-2.5 rounded-xl transition-all duration-200 shadow-sm">
+                Sign Up
               </button>
             </Link>
           </div>
@@ -90,27 +94,27 @@ export function PublicNav() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="fixed top-[61px] left-0 right-0 z-40 bg-white border-b border-gray-100 px-6 py-5 flex flex-col gap-4 shadow-lg md:hidden"
+            className="fixed top-[61px] left-0 right-0 z-40 bg-white border-b border-gray-100 px-6 py-5 flex flex-col gap-3 shadow-lg md:hidden"
           >
             {links.map((l) => (
               <a
                 key={l.label}
                 href={l.href}
-                className="text-sm text-gray-700 font-medium no-underline hover:text-green-600"
+                className="text-sm text-gray-700 font-medium no-underline hover:text-green-600 py-1"
                 onClick={() => setOpen(false)}
               >
                 {l.label}
               </a>
             ))}
-            <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+            <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
               <Link href="/auth/login" onClick={() => setOpen(false)}>
-                <button className="w-full text-sm text-gray-700 font-medium py-2.5 border border-gray-200 rounded-lg">
-                  Login
+                <button className="w-full text-sm font-semibold text-gray-700 py-2.5 border-2 border-gray-200 rounded-xl">
+                  Log In
                 </button>
               </Link>
               <Link href="/auth/register" onClick={() => setOpen(false)}>
-                <button className="w-full text-sm bg-green-600 text-white font-semibold py-2.5 rounded-lg">
-                  Get Started Free
+                <button className="w-full text-sm font-semibold bg-green-700 text-white py-2.5 rounded-xl">
+                  Sign Up
                 </button>
               </Link>
             </div>

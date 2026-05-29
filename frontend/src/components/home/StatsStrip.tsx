@@ -24,26 +24,43 @@ function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
 }
 
 const stats = [
-  { value: 12000, suffix: "+", label: "Farmers Protected",   sub: "Across East Africa" },
-  { value: 200,   suffix: "+", label: "Diseases Indexed",    sub: "In knowledge base" },
-  { value: 96,    suffix: "%", label: "Crop ID Accuracy",    sub: "When image is clear" },
-  { value: 5,     suffix: "",  label: "Languages Supported", sub: "Including Luganda & Swahili" },
+  { value: 10000, suffix: "+", label: "Farmers Helped" },
+  { value: 25,    suffix: "+", label: "Crops Supported" },
+  { value: 98,    suffix: "%", label: "Satisfaction Rate" },
 ];
 
 export function StatsStrip() {
   return (
-    <section className="bg-green-600 py-14">
-      <div className="max-w-6xl mx-auto px-6 md:px-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map(({ value, suffix, label, sub }) => (
-            <div key={label} className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-1">
-                <Counter target={value} suffix={suffix} />
-              </div>
-              <div className="text-green-100 font-semibold text-sm mb-0.5">{label}</div>
-              <div className="text-green-200/70 text-xs">{sub}</div>
+    <section className="bg-gray-50 border-t border-b border-gray-100 py-10">
+      <div className="max-w-4xl mx-auto px-6 md:px-10">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+          {/* Left branding */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm">🌿</span>
             </div>
-          ))}
+            <span className="text-gray-600 font-semibold text-sm">
+              Built for Farmers. Powered by AI.
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden md:block h-10 w-px bg-gray-200" />
+
+          {/* Stats */}
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+            {stats.map(({ value, suffix, label }, i) => (
+              <div key={label} className="text-center flex items-center gap-4">
+                {i > 0 && <div className="hidden md:block h-8 w-px bg-gray-200" />}
+                <div>
+                  <div className="text-3xl font-extrabold text-green-700">
+                    <Counter target={value} suffix={suffix} />
+                  </div>
+                  <div className="text-gray-500 text-xs mt-0.5">{label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
