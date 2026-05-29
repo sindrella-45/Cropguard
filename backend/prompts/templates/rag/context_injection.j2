@@ -1,0 +1,48 @@
+{#
+   context_injection.j2
+   Injects retrieved ChromaDB chunks into the prompt
+   as verified context for the agent to use.
+   Addresses reviewer feedback on RAG transparency.
+   
+   Variables:
+   - chunks: list of SourceReference objects
+   - query_used: the search query that was run
+#}
+
+{% if chunks %}
+The following information was retrieved from our 
+verified crop disease knowledge base.
+
+Search query used: "{{ query_used }}"
+
+Retrieved context:
+{% for chunk in chunks %}
+
+[{{ loop.index }}] Document: {{ chunk.document_name }}
+     Chunk ID: {{ chunk.chunk_id }}
+     Relevance: {{ chunk.similarity_score }} / 1.0
+     {% if chunk.page_number %}
+     Page: {{ chunk.page_number }}
+     {% endif %}
+
+{{ chunk.chunk_text }}
+
+{% endfor %}
+
+Base your diagnosis primarily on this retrieved 
+knowledge combined with the visual evidence.
+Always cite the source when referencing this context.
+
+{% else %}
+No relevant information was retrieved from the 
+disease knowledge base for this query.
+
+This means either:
+- The disease is not in our current database
+- The image description did not match known patterns
+- The retrieval confidence was below the threshold
+
+Clearly state in your response that no database 
+context was available and that your diagnosis is 
+based solely on visual analysis.
+{% endif %}

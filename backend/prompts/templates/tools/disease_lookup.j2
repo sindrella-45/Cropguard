@@ -1,0 +1,39 @@
+{#
+   disease_lookup.j2
+   Prompt for the RAG disease lookup tool.
+   Guides the agent on how to use retrieved
+   disease information from ChromaDB.
+   
+   Variables:
+   - search_results: list of retrieved chunks
+   - original_query: the query that was run
+#}
+
+You searched our crop disease database for:
+"{{ original_query }}"
+
+{% if search_results %}
+Found {{ search_results | length }} relevant 
+results from verified agricultural sources:
+
+{% for result in search_results %}
+Result {{ loop.index }}:
+Source: {{ result.document_name }}
+Relevance: {{ result.similarity_score }}/1.0
+
+{{ result.chunk_text }}
+
+{% endfor %}
+
+Instructions for using these results:
+1. Prioritise results with similarity score above 0.8
+2. Cross-reference symptoms mentioned with visual analysis
+3. If multiple diseases match, list the most likely first
+4. Always mention the source in your diagnosis
+5. Never contradict information from high-scoring results
+
+{% else %}
+No results found in the disease database.
+Proceed with visual analysis only and clearly
+state that no database reference was available.
+{% endif %}

@@ -1,0 +1,43 @@
+{#
+   summarize_history.j2
+   Summarises a farmer's past diagnosis history.
+   Used by the long-term memory module to give
+   the agent context about recurring issues.
+   
+   Variables:
+   - farmer_name: optional string
+   - past_sessions: list of diagnosis history dicts
+#}
+
+Summarise the following diagnosis history for
+{{ farmer_name | default("this farmer") }}.
+
+Past diagnoses:
+{% for session in past_sessions %}
+Date: {{ session.date }}
+Plant: {{ session.plant_identified }}
+Disease: {{ session.diagnosis_name }}
+Severity: {{ session.severity }}
+Treatment given: {{ session.treatment_summary }}
+Farmer rating: {{ session.rating }}/5
+─────────────────────────────────
+{% endfor %}
+
+From this history identify:
+
+1. Recurring diseases
+   Are the same diseases appearing repeatedly?
+
+2. Treatment effectiveness
+   Did previous treatments improve the situation?
+   Look at severity trends over time.
+
+3. Seasonal patterns
+   Are diseases appearing at similar times of year?
+
+4. Current risk factors
+   Based on history what should this farmer 
+   watch out for right now?
+
+Provide a brief 3-4 sentence summary the agent
+can use to give more personalised advice.

@@ -1,0 +1,80 @@
+{#
+   vision_analysis.j2
+   Prompt for Node 4 of the LangGraph pipeline.
+   Instructs GPT-4o to examine the leaf image,
+   identify the crop automatically, and describe
+   visible symptoms without making a diagnosis yet.
+
+   Variables:
+   - plant_type: optional hint from farmer (overrides detection)
+   - weather_data: optional dict with temperature, humidity
+   - personality: friendly, formal, or concise
+#}
+
+Carefully examine this leaf image.
+
+{% if plant_type %}
+The farmer has indicated this is a {{ plant_type }} plant.
+Use this as context when describing what you see.
+{% else %}
+First identify what crop this leaf belongs to by examining:
+- Leaf shape, size, texture and vein pattern
+- Leaf colour and surface characteristics
+- Any distinctive features of the plant
+
+Our knowledge base covers these crops:
+coffee, tea, cocoa, cotton, sunflower
+
+If the crop matches one of the above, name it exactly.
+If it does not match any of them, use "general".
+{% endif %}
+
+Then look for the following visual indicators of disease:
+
+Colour changes:
+- Yellowing (chlorosis)
+- Browning or blackening
+- Dark or light spots
+- Uneven colour distribution
+
+Physical changes:
+- Spots or lesions (note size, shape, colour, pattern)
+- Wilting or curling of the leaf
+- Drying or crispy edges
+- Holes or tears in the leaf surface
+
+Growth on the leaf:
+- White powdery coating
+- Fuzzy mold growth
+- Dark fungal spores
+- Wet or oily patches
+
+Pest damage:
+- Bite marks or irregular holes
+- Tunneling patterns
+- Tiny insects visible on surface
+
+{% if weather_data %}
+Current weather conditions to factor into your analysis:
+- Temperature: {{ weather_data.temperature }}°C
+- Humidity: {{ weather_data.humidity }}%
+- Recent rainfall: {{ weather_data.rainfall | default("unknown") }}mm
+
+Note: High humidity above 80% increases fungal disease risk.
+High temperatures above 35°C may cause heat stress symptoms.
+{% endif %}
+
+Respond ONLY with a valid JSON object.
+No markdown, no backticks, no extra text.
+Use exactly this structure:
+
+{
+  "crop_identified": "coffee",
+  "crop_confidence": 90,
+  "visual_description": "Detailed description of exactly what you observe on the leaf..."
+}
+
+Where:
+- crop_identified: one of coffee, tea, cocoa, cotton, sunflower, or general
+- crop_confidence: integer 0-100 how confident you are about the crop identification
+- visual_description: detailed description of symptoms — do not diagnose yet, only describe

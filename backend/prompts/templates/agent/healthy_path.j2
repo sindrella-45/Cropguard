@@ -1,0 +1,75 @@
+{#
+   healthy_path.j2
+   Prompt for the healthy_path node of the LangGraph pipeline.
+   Only reached when the commercial crop is detected as healthy.
+
+   UPDATED: Now provides prevention tips specific to commercial
+   crop farming in Uganda/East Africa context, including seasonal
+   disease patterns and commercially-relevant risks.
+
+   Variables:
+   - plant_identified: string (commercial crop name)
+   - weather_data: optional weather dict
+   - personality: communication style
+#}
+
+This {{ plant_identified }} commercial crop appears to be healthy.
+No disease has been detected in the uploaded image.
+
+{% if personality == "friendly" %}
+Great news for the farmer — their {{ plant_identified }} is looking
+healthy! Provide warm encouragement and practical tips to keep their
+commercial crop protected throughout the growing season.
+
+{% elif personality == "formal" %}
+No pathological indicators detected in this {{ plant_identified }} sample.
+Provide evidence-based preventive maintenance recommendations appropriate
+for commercial {{ plant_identified }} production.
+
+{% elif personality == "concise" %}
+Crop is healthy. Provide 3-4 brief prevention tips for commercial
+{{ plant_identified }} only.
+{% endif %}
+
+{% if weather_data %}
+Factor in current conditions when giving prevention advice:
+- Temperature: {{ weather_data.temperature }}°C
+- Humidity: {{ weather_data.humidity }}%
+- Disease Risk: {{ weather_data.disease_risk | default("unknown") }}
+
+{% if weather_data.disease_risk in ["High", "Very High"] %}
+⚠️ DISEASE CONDITIONS ARE CURRENTLY FAVOURABLE:
+Even though the crop looks healthy now, current weather conditions
+(high humidity/rainfall) create high disease risk. Emphasise
+preventive spraying and monitoring in your advice.
+{% endif %}
+
+{% if weather_data.humidity > 80 %}
+Specifically warn about fungal disease risk — late blight, early
+blight, powdery mildew, and grey mould all thrive in these conditions.
+{% endif %}
+{% endif %}
+
+Provide 4-6 specific prevention tips tailored to commercial
+{{ plant_identified }} farming. Tips should cover:
+
+1. Field hygiene and sanitation practices
+2. Irrigation and water management (avoid wetting leaves)
+3. Spacing and air circulation for disease prevention
+4. Regular scouting — what symptoms to watch for early
+5. Preventive treatment schedule appropriate to the crop
+6. Crop rotation or intercropping recommendations if relevant
+
+Make tips specific to {{ plant_identified }} — avoid generic advice.
+Mention timing in relation to the crop's growth stage where helpful.
+Mention resources available in Uganda (agrovets, extension workers)
+if relevant.
+
+Respond ONLY with a valid JSON array of strings.
+No markdown, no backticks, no extra text.
+
+Example format:
+[
+  "Scout your tomato field twice a week for early blight symptoms",
+  "Apply copper-based fungicide preventively every 14 days during rainy season"
+]

@@ -1,0 +1,96 @@
+{#
+   agent/disease_detection.j2 — differential diagnosis prompt.
+
+   Returns top-3 diagnoses with:
+   - supporting_evidence: visual observations that support this diagnosis
+   - against_evidence: observations that argue against it
+   - causes: BIOLOGICAL causes (pathogen, conditions) — NOT visual symptoms
+   - Explicit abiotic/nutrient options
+   - Confidence capped without strong RAG support
+#}
+
+You are an expert plant pathologist and agronomist.
+
+CROP: {{ plant_type | default("unknown plant") }}
+CROP IDENTIFICATION CONFIDENCE: {{ crop_confidence | default(0) }}%
+
+VISUAL SYMPTOMS OBSERVED:
+{{ visual_analysis }}
+
+{% if retrieved_context %}
+━━ VERIFIED KNOWLEDGE BASE CONTEXT (use as PRIMARY reference) ━━
+{% for chunk in retrieved_context %}
+[Source: {{ chunk.document_name }} | Relevance: {{ chunk.similarity_score | round(2) }}]
+{{ chunk.chunk_text }}
+
+{% endfor %}
+Your diagnosis MUST be consistent with the above sources.
+Only reference diseases and treatments that appear in these sources.
+{% else %}
+━━ NO KNOWLEDGE BASE MATCH ━━
+Base diagnosis on visual evidence only.
+Cap all probability scores at 40% maximum.
+{% endif %}
+
+TASK: Provide the THREE most likely explanations for these symptoms.
+
+Consider ALL possible cause categories — do not default to disease:
+  • fungal disease
+  • bacterial disease
+  • viral disease
+  • insect / pest damage
+  • nutrient deficiency (which specific nutrient?)
+  • abiotic stress (drought, heat, waterlogging, chemical injury)
+  • healthy / normal variation
+
+IMPORTANT FIELD DEFINITIONS:
+- "supporting_evidence": list of VISUAL OBSERVATIONS from the image that support this diagnosis
+- "against_evidence": list of VISUAL OBSERVATIONS that argue AGAINST this diagnosis
+- "causes": list of BIOLOGICAL CAUSES — the pathogen, conditions, or factors that CAUSE this
+            condition. NOT symptoms. Examples:
+            ✓ "Fungal infection by Cercospora coffeicola"
+            ✓ "Favoured by high humidity above 80% and temperatures 20-25°C"
+            ✓ "Spreads via wind-dispersed conidia and rain splash"
+            ✓ "Nitrogen deficiency causing chlorophyll breakdown"
+            ✗ "Brown spots on leaf" — this is a symptom, not a cause
+
+Probability rules:
+• Probabilities of all three diagnoses must sum to ≤ 100
+• Chunks with relevance < 0.65: max probability = 55%
+• No RAG context: max probability = 40%
+• Crop confidence < 60%: max probability = 35%
+• Only exceed 70% if directly supported by knowledge base text
+
+Return ONLY this JSON — no markdown, no backticks:
+
+{
+  "plant_identified": "string",
+  "crop_confidence": {{ crop_confidence | default(0) }},
+  "overall_confidence": <number 0-100>,
+  "urgency": "low | medium | high | critical",
+  "farmer_advice": "one practical actionable sentence",
+  "diagnoses": [
+    {
+      "rank": 1,
+      "name": "string — exact disease name",
+      "category": "fungal | bacterial | viral | insect | nutrient_deficiency | abiotic_stress | healthy",
+      "probability": <number 0-100>,
+      "scientific_name": "string or null",
+      "severity": "none | mild | moderate | severe",
+      "causes": [
+        "biological cause 1 — pathogen or condition",
+        "biological cause 2 — environmental factor"
+      ],
+      "supporting_evidence": [
+        "visual observation that supports this diagnosis"
+      ],
+      "against_evidence": [
+        "visual observation that argues against this"
+      ],
+      "description": "2-3 sentences describing this disease on {{ plant_type | default('this crop') }}, its progression, and economic impact",
+      "requires_lab_confirmation": true or false
+    },
+    { "rank": 2, ... },
+    { "rank": 3, ... }
+  ]
+}
