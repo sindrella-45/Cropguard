@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { startKeepAlive } from "@/lib/keepAlive";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,11 +31,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { label: t(lang, "nav_profile"),   href: "/profile",   icon: User },
   ];
 
-  useEffect(() => {
+  \useEffect(() => {
     if (!user) {
       router.replace("/auth/login");
     }
   }, [user, router]);
+
+  // Keep Render backend alive
+  useEffect(() => {
+    startKeepAlive();
+  }, []);
 
   if (!user) return null;
 
@@ -43,6 +49,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     addToast("You have been signed out.", "info");
     router.push("/");
   };
+  
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
