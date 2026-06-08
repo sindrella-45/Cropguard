@@ -31,7 +31,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { label: t(lang, "nav_profile"),   href: "/profile",   icon: User },
   ];
 
-  \useEffect(() => {
+  useEffect(() => {
     if (!user) {
       router.replace("/auth/login");
     }
