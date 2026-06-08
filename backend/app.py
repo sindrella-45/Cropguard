@@ -86,17 +86,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-   allow_origins=[
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://cropguard.ai",
-    "https://cropguard-zeta.vercel.app",
-    "https://cropguard-ai-m7hh.onrender.com",
-],
-    
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://cropguard-zeta.vercel.app",
+        "https://cropguard.ai",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 # ── Routers ────────────────────────────────────────────────────────────────────
