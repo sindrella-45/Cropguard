@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { dashboardApi, type HistoryResponse, type TokenUsage, type RealDiagnosis } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
+import { useRouter } from "next/navigation";
 
 const fadeUp = (i = 0) => ({
   initial: { opacity: 0, y: 16 },

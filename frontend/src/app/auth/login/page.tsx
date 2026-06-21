@@ -64,14 +64,11 @@ export default function LoginPage() {
 
       // Remember me — persist token to localStorage
       if (remember) {
-        localStorage.setItem("cropguard-token",   data.access_token);
-        localStorage.setItem("cropguard-remember", "true");
-      } else {
-        // Session only — clear on browser close
-        sessionStorage.setItem("cropguard-token", data.access_token);
-        localStorage.removeItem("cropguard-token");
-        localStorage.removeItem("cropguard-remember");
-      }
+       localStorage.setItem("cropguard_remember", "true");
+       } else {
+       localStorage.removeItem("cropguard_remember");
+   }
+
 
       addToast(`Welcome back, ${data.full_name.split(" ")[0]}! 👋`, "success");
       router.push("/dashboard");

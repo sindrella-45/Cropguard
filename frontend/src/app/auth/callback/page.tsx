@@ -35,20 +35,25 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // Save token
-    localStorage.setItem("cropguard-token", token);
-
     // ── Decode user info directly from JWT ──────────────
-    // This works instantly without needing the backend
     const decoded = decodeJWT(token);
 
     if (decoded) {
-      const email    = decoded.email || "";
-      const name     = decoded.user_metadata?.full_name
-                    || decoded.user_metadata?.name
-                    || email.split("@")[0]
-                    || "Farmer";
-      const userId   = decoded.sub || "user";
+      const email  = decoded.email || "";
+      const name   = decoded.user_metadata?.full_name
+                  || decoded.user_metadata?.name
+                  || email.split("@")[0]
+                  || "Farmer";
+      const userId = decoded.sub || "user";
+
+      
+      localStorage.setItem("cropguard_token", token);
+      localStorage.setItem("cropguard_user", JSON.stringify({
+        user_id:   userId,
+        email,
+        full_name: name,
+        access_token: token,
+      }));
 
       setStatus("Welcome to CropGuard AI!");
 
@@ -68,32 +73,38 @@ export default function AuthCallbackPage() {
       addToast(`Welcome, ${name.split(" ")[0]}! 👋`, "success");
 
       // Try to sync profile with backend in background (non-blocking)
-const BACKEND = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-fetch(`${BACKEND}/auth/me`, {
-  headers: { Authorization: `Bearer ${token}` },
-})
-  .then((r) => r.json())
-  .then((profile) => {
-    // Only update name if backend has a better one
-    if (profile?.full_name && profile.full_name !== name) {
-      setUser({
-        id:          userId,
-        name:        profile.full_name,
-        email:       profile.email || email,
-        role:        "Farmer",
-        location:    "Uganda",
-        avatar:      profile.full_name.slice(0, 2).toUpperCase(),
-        memberSince: new Date().toLocaleDateString("en-US", {
-          month: "long", year: "numeric",
-        }),
-        crops: [],
-      });
-    }
-  })
-  .catch(() => {
-    // Backend still waking up — user already logged in, ignore
-  });
-          
+      const BACKEND = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      fetch(`${BACKEND}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((profile) => {
+          if (profile?.full_name && profile.full_name !== name) {
+            setUser({
+              id:          userId,
+              name:        profile.full_name,
+              email:       profile.email || email,
+              role:        "Farmer",
+              location:    "Uganda",
+              avatar:      profile.full_name.slice(0, 2).toUpperCase(),
+              memberSince: new Date().toLocaleDateString("en-US", {
+                month: "long", year: "numeric",
+              }),
+              crops: [],
+            });
+
+            // Keep cropguard_user in sync too
+            localStorage.setItem("cropguard_user", JSON.stringify({
+              user_id:      userId,
+              email:        profile.email || email,
+              full_name:    profile.full_name,
+              access_token: token,
+            }));
+          }
+        })
+        .catch(() => {
+          // Backend still waking up — user already logged in, ignore
+        });
 
       router.push("/dashboard");
       return;
