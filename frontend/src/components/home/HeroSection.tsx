@@ -14,7 +14,6 @@ export function HeroSection() {
           alt="Farm field"
           className="w-full h-full object-cover object-center"
         />
-        {/* Gradient overlay — lighter on left for text, transparent on right for phone */}
         <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/60 to-white/10" />
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/40" />
       </div>
@@ -72,11 +71,11 @@ export function HeroSection() {
           transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex justify-center lg:justify-end"
         >
-          {/* Phone frame */}
           <div className="relative w-[280px] md:w-[300px]">
             {/* Phone shell */}
             <div className="bg-gray-900 rounded-[42px] p-3 shadow-2xl">
               <div className="bg-white rounded-[32px] overflow-hidden">
+
                 {/* Status bar */}
                 <div className="bg-gray-50 px-5 py-2 flex items-center justify-between">
                   <span className="text-[10px] font-semibold text-gray-500">9:41</span>
@@ -94,25 +93,51 @@ export function HeroSection() {
                   <span className="text-gray-400 text-lg">⋮</span>
                 </div>
 
-                {/* Leaf image area */}
-                <div className="relative h-40 bg-gradient-to-br from-green-800 to-green-600 flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 opacity-30"
-                    style={{
-                      backgroundImage: "radial-gradient(circle at 30% 40%, #16a34a 0%, transparent 50%), radial-gradient(circle at 70% 60%, #15803d 0%, transparent 50%)"
+                {/* ── Real tomato leaf disease image ── */}
+                <div className="relative h-44 overflow-hidden">
+                  <img
+                    src="https://images.unsplash.com/photo-1592838064575-70ed626d3a0e?w=600&auto=format&fit=crop&q=80"
+                    alt="Tomato leaf with disease spots"
+                    className="w-full h-full object-cover object-center"
+                    onError={(e) => {
+                      // Fallback to another tomato leaf image if first fails
+                      (e.target as HTMLImageElement).src =
+                        "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=600&auto=format&fit=crop&q=80";
                     }}
                   />
-                  <span className="text-7xl filter drop-shadow-xl relative z-10">🍅</span>
-                  {/* Orange spots to simulate disease */}
-                  <div className="absolute top-8 left-12 w-3 h-3 bg-orange-400 rounded-full opacity-80" />
-                  <div className="absolute top-14 left-20 w-2 h-2 bg-amber-500 rounded-full opacity-70" />
-                  <div className="absolute top-6 left-24 w-2.5 h-2.5 bg-orange-300 rounded-full opacity-60" />
-                  <div className="absolute top-20 left-16 w-2 h-2 bg-yellow-500 rounded-full opacity-75" />
+                  {/* Scanning overlay to make it look like AI is analysing */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  {/* Scan line animation */}
+                  <motion.div
+                    className="absolute left-0 right-0 h-0.5 bg-green-400/70"
+                    initial={{ top: "10%" }}
+                    animate={{ top: "90%" }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      ease: "linear",
+                    }}
+                  />
+                  {/* AI analysing badge */}
+                  <div className="absolute top-2 right-2 bg-green-600/90 text-white text-[9px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    Analysing
+                  </div>
+                  {/* Bottom label */}
+                  <div className="absolute bottom-2 left-3 text-white text-[10px] font-semibold drop-shadow">
+                    Tomato Leaf · Uploaded just now
+                  </div>
                 </div>
 
                 {/* Diagnosis content */}
                 <div className="px-4 py-3">
-                  <div className="text-[10px] text-gray-400 font-medium mb-0.5">Disease Detected</div>
-                  <div className="text-green-700 font-bold text-base mb-3">Tomato Leaf Spot</div>
+                  <div className="text-[10px] text-gray-400 font-medium mb-0.5">
+                    Disease Detected
+                  </div>
+                  <div className="text-green-700 font-bold text-base mb-3">
+                    Tomato Leaf Spot
+                  </div>
 
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-gray-50 rounded-xl p-2.5">
@@ -148,7 +173,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            {/* Phone reflection glow */}
+            {/* Glow under phone */}
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-48 h-8 bg-green-400/20 blur-xl rounded-full" />
           </div>
         </motion.div>
@@ -159,10 +184,10 @@ export function HeroSection() {
         <div className="max-w-7xl mx-auto px-6 md:px-10 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: "📷", title: "AI Disease Detection",       desc: "Upload a photo and get instant AI insights." },
-              { icon: "💊", title: "Treatment Recommendations",  desc: "Get practical solutions tailored to your crops." },
-              { icon: "📚", title: "Farming Guides",             desc: "Access expert tips and best farming practices." },
-              { icon: "📊", title: "Track & Improve",            desc: "Monitor your crop health and boost your yields." },
+              { icon: "📷", title: "AI Disease Detection",      desc: "Upload a photo and get instant AI insights." },
+              { icon: "💊", title: "Treatment Recommendations", desc: "Get practical solutions tailored to your crops." },
+              { icon: "📚", title: "Farming Guides",            desc: "Access expert tips and best farming practices." },
+              { icon: "📊", title: "Track & Improve",           desc: "Monitor your crop health and boost your yields." },
             ].map(({ icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
