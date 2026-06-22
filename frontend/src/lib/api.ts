@@ -203,28 +203,28 @@ export const diagnoseApi = {
    * Ask a follow-up question about a diagnosis
    */
   async followup(
-  session_id: string,
-  question: string,
-  selected_model = "gpt-4o",
-  diagnosis?: Record<string, unknown>,
-): Promise<{ answer: string; session_id: string }> {
-  const res = await fetch(`${BASE_URL}/followup`, {
-    method: "POST",
-    headers: await authHeaders(),
-    body: JSON.stringify({
-      session_id,
-      question,
-      selected_model,
-      language: useAppStore.getState().settings.language,
-      diagnosis_context: diagnosis || null,
-    }),
-  });
-  if (!res.ok) throw new Error("Follow-up failed");
-  return res.json();
-},
+    session_id: string,
+    question: string,
+    selected_model = "gpt-4o",
+    diagnosis?: Record<string, unknown>,
+  ): Promise<{ answer: string; session_id: string }> {
+    const res = await fetch(`${BASE_URL}/followup`, {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({
+        session_id,
+        question,
+        selected_model,
+        language: useAppStore.getState().settings.language,
+        diagnosis_context: diagnosis || null,
+      }),
+    });
+    if (!res.ok) throw new Error("Follow-up failed");
+    return res.json();
+  },
+};
 
 // ── History API ───────────────────────────────────────────────────────────────
-
 export const historyApi = {
   async getAll(): Promise<HistoryItem[]> {
     const res = await fetch(`${BASE_URL}/history`, {
