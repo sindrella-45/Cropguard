@@ -86,16 +86,19 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-   allow_origins=[
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://cropguard.ai",
-    "https://cropguard-zeta.vercel.app",
-],)
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://cropguard.ai",
+        "https://cropguard-zeta.vercel.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ── Routers ────────────────────────────────────────────────────────────────────
-# FIX: followup_router was registered twice (under "Follow-up" and "Analysis").
-# Removed duplicate — now registered once with both tags.
+
 app.include_router(auth_router,     prefix="/auth",   tags=["Authentication"])
 app.include_router(analyze_router,                    tags=["Analysis"])
 app.include_router(history_router,                    tags=["History"])
