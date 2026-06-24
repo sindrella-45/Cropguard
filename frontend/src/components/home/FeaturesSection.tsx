@@ -49,7 +49,6 @@ export function FeaturesSection() {
   return (
     <section id="features" className="bg-gray-50 py-20 px-6 md:px-10">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <motion.div
           ref={ref}
           initial={{ opacity: 0, y: 20 }}
@@ -65,7 +64,6 @@ export function FeaturesSection() {
           </h2>
         </motion.div>
 
-        {/* Bento grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {features.map(({ icon, bg, title, description, image, dark }, i) => (
             <motion.div
@@ -73,11 +71,9 @@ export function FeaturesSection() {
               initial={{ opacity: 0, y: 24 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className={`relative rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-xl group ${
-                dark ? "border-gray-800" : "border-gray-100"
-              }`}
+              className="relative rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-xl group"
             >
-              {/* Background image when available */}
+              {/* Background image with HEAVY overlay so text is always readable */}
               {image && (
                 <>
                   <img
@@ -87,18 +83,18 @@ export function FeaturesSection() {
                   />
                   <div className={`absolute inset-0 ${
                     dark
-                      ? "bg-gradient-to-br from-gray-900/95 via-gray-900/85 to-gray-900/70"
-                      : "bg-gradient-to-br from-white/97 via-white/90 to-white/70"
+                      ? "bg-gray-900/88"
+                      : "bg-white/92"
                   }`} />
                 </>
               )}
 
               {/* No image — solid background */}
               {!image && (
-                <div className={dark ? "absolute inset-0 bg-gray-900" : "absolute inset-0 bg-white"} />
+                <div className={`absolute inset-0 ${dark ? "bg-gray-900" : "bg-white"}`} />
               )}
 
-              {/* Content */}
+              {/* Content — always on top, always readable */}
               <div className="relative z-10 p-8">
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${
                   dark ? "bg-green-600" : bg
@@ -108,7 +104,7 @@ export function FeaturesSection() {
                 <h3 className={`font-bold text-xl mb-3 ${dark ? "text-white" : "text-gray-900"}`}>
                   {title}
                 </h3>
-                <p className={`text-sm leading-relaxed ${dark ? "text-gray-300" : "text-gray-500"}`}>
+                <p className={`text-sm leading-relaxed ${dark ? "text-gray-300" : "text-gray-600"}`}>
                   {description}
                 </p>
               </div>

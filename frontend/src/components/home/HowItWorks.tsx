@@ -50,8 +50,6 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="bg-white py-20 px-6 md:px-10">
       <div className="max-w-6xl mx-auto">
-
-        {/* Header */}
         <motion.div
           ref={ref}
           initial={{ opacity: 0, y: 20 }}
@@ -74,7 +72,6 @@ export function HowItWorks() {
           </Link>
         </motion.div>
 
-        {/* Steps */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {steps.map(({ number, icon, bg, title, description, image }, i) => (
             <motion.div
@@ -84,7 +81,7 @@ export function HowItWorks() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className="relative rounded-2xl overflow-hidden border border-gray-100 group hover:shadow-lg transition-all duration-300"
             >
-              {/* Background image for steps 1 and 4 */}
+              {/* Real photo — with very strong white overlay so text is crisp */}
               {image && (
                 <>
                   <img
@@ -92,7 +89,7 @@ export function HowItWorks() {
                     alt={title}
                     className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/96 via-white/88 to-white/60" />
+                  <div className="absolute inset-0 bg-white/90" />
                 </>
               )}
               {!image && <div className="absolute inset-0 bg-gray-50" />}
@@ -103,16 +100,10 @@ export function HowItWorks() {
                   <div className={`w-11 h-11 ${bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
                     {icon}
                   </div>
-                  <span className="text-3xl font-black text-gray-100 select-none">
-                    {number}
-                  </span>
+                  <span className="text-3xl font-black text-gray-100 select-none">{number}</span>
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2 leading-snug">
-                  {title}
-                </h3>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  {description}
-                </p>
+                <h3 className="font-bold text-gray-900 text-lg mb-2 leading-snug">{title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{description}</p>
               </div>
             </motion.div>
           ))}
