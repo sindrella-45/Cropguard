@@ -7,20 +7,16 @@ export function HeroSection() {
   return (
     <section className="relative min-h-[90vh] flex flex-col overflow-hidden">
 
-      {/* ── Background — solid white left, image fades in on right only ── */}
+      {/* ── White left, farm photo fades in on right only ── */}
       <div className="absolute inset-0 z-0">
-        {/* White base so text side is always clean */}
         <div className="absolute inset-0 bg-white" />
-        {/* Farm photo only visible on the right half */}
         <div className="absolute right-0 top-0 bottom-0 w-full lg:w-[55%]">
           <img
             src="/images/hero-farm.jpg"
             alt="Farm field"
             className="w-full h-full object-cover object-center"
           />
-          {/* Strong fade from left (white) to show image on right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/30 to-transparent" />
-          {/* Subtle bottom fade */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent" />
         </div>
       </div>
@@ -28,7 +24,7 @@ export function HeroSection() {
       {/* ── Main content ── */}
       <div className="relative z-10 flex-1 max-w-7xl mx-auto px-6 md:px-10 pt-32 pb-16 w-full grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
 
-        {/* LEFT — always on pure white, fully readable */}
+        {/* LEFT — clean white, fully readable */}
         <div>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -79,29 +75,9 @@ export function HeroSection() {
               </button>
             </Link>
           </motion.div>
-
-          {/* Trust stats row */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex flex-wrap gap-6 mt-10 pt-8 border-t border-gray-100"
-          >
-            {[
-              { num: "10,000+", label: "Farmers Helped" },
-              { num: "25+",     label: "Crops Supported" },
-              { num: "96%",     label: "Accuracy Rate" },
-              { num: "< 60s",   label: "Per Diagnosis" },
-            ].map(({ num, label }) => (
-              <div key={label}>
-                <div className="text-xl font-extrabold text-gray-900">{num}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{label}</div>
-              </div>
-            ))}
-          </motion.div>
         </div>
 
-        {/* RIGHT — Phone mockup with REAL leaf photo */}
+        {/* RIGHT — Phone mockup */}
         <motion.div
           initial={{ opacity: 0, x: 40, y: 20 }}
           animate={{ opacity: 1, x: 0, y: 0 }}
@@ -113,7 +89,6 @@ export function HeroSection() {
 
             {/* Phone shell */}
             <div className="relative bg-gray-900 rounded-[44px] p-[10px] shadow-2xl shadow-gray-900/40">
-              {/* Side buttons */}
               <div className="absolute -left-[3px] top-24 w-[3px] h-8 bg-gray-700 rounded-l-sm" />
               <div className="absolute -left-[3px] top-36 w-[3px] h-12 bg-gray-700 rounded-l-sm" />
               <div className="absolute -right-[3px] top-32 w-[3px] h-10 bg-gray-700 rounded-r-sm" />
@@ -165,14 +140,13 @@ export function HeroSection() {
                   </button>
                 </div>
 
-                {/* ── REAL tomato leaf photo ── */}
+                {/* ── Leaf image ── */}
                 <div className="relative h-44 overflow-hidden bg-green-950">
                   <img
                     src="/images/tomato-leaf-disease.jpg"
                     alt="Diseased tomato leaf"
                     className="w-full h-full object-cover"
                   />
-                  {/* Bottom gradient for label legibility */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
 
                   {/* Animated scan line */}
@@ -183,7 +157,7 @@ export function HeroSection() {
                     transition={{ duration: 2.5, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
                   />
 
-                  {/* Detection corner boxes */}
+                  {/* Detection boxes */}
                   {[
                     { top: "18%", left: "22%" },
                     { top: "38%", left: "55%" },
@@ -197,13 +171,10 @@ export function HeroSection() {
                     </div>
                   ))}
 
-                  {/* Analysing badge */}
                   <div className="absolute top-2 right-2 bg-green-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                     Analysing
                   </div>
-
-                  {/* Bottom label */}
                   <div className="absolute bottom-2 left-3 text-white text-[11px] font-semibold drop-shadow-md">
                     Tomato Leaf · Just uploaded
                   </div>
@@ -235,9 +206,7 @@ export function HeroSection() {
                   </div>
 
                   <div className="bg-green-50 rounded-xl p-2.5 mb-3 border border-green-100">
-                    <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wide mb-2">
-                      Recommended Treatment
-                    </div>
+                    <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wide mb-2">Recommended Treatment</div>
                     {["Remove affected leaves", "Apply copper fungicide", "Improve air circulation"].map((t) => (
                       <div key={t} className="flex items-center gap-1.5 mb-1.5 last:mb-0">
                         <div className="w-3.5 h-3.5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
@@ -264,14 +233,14 @@ export function HeroSection() {
         </motion.div>
       </div>
 
-      {/* ── Feature strip — white background, always readable ── */}
+      {/* ── Feature strip ── */}
       <div className="relative z-10 bg-white border-t border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 md:px-10 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { icon: <Camera size={18} className="text-green-600" />,    bg: "bg-green-50",  title: "AI Disease Detection",      desc: "Upload a photo and get instant AI insights." },
               { icon: <Shield size={18} className="text-blue-600" />,     bg: "bg-blue-50",   title: "Treatment Recommendations", desc: "Practical solutions tailored to your crops." },
-              { icon: <BookMarked size={18} className="text-amber-600"/>,  bg: "bg-amber-50",  title: "Farming Guides",            desc: "Expert tips and best farming practices." },
+              { icon: <BookMarked size={18} className="text-amber-600" />, bg: "bg-amber-50",  title: "Farming Guides",            desc: "Expert tips and best farming practices." },
               { icon: <BarChart2 size={18} className="text-purple-600" />, bg: "bg-purple-50", title: "Track & Improve",           desc: "Monitor crop health and boost your yields." },
             ].map(({ icon, bg, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
