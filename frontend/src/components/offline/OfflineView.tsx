@@ -344,11 +344,11 @@ export function OfflineView() {
           ].map(({ icon, label, ok }) => (
             <div
               key={label}
-              className={`flex items-center gap-3 p-3 rounded-xl text-sm border ${
-                ok
-                  ? "bg-green-50 text-green-800 border-green-100"
-                  : "bg-gray-50 text-gray-400 border-gray-100"
-              }`}
+              className={`flex items-center gap-3 p-3 rounded-xl text-sm border cursor-default transition-all duration-200 ${
+            ok
+            ? "bg-green-50 text-green-800 border-green-100 hover:bg-green-100 hover:border-green-300 hover:shadow-sm hover:scale-[1.02]"
+            : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100 hover:border-gray-200 hover:shadow-sm hover:scale-[1.02]"
+            }`}
             >
               <div className={`flex-shrink-0 ${ok ? "text-green-600" : "text-gray-300"}`}>
                 {ok ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
