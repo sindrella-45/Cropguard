@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { useAppStore } from "@/lib/store";
 import { diagnoseApi, type AnalyzeResponse } from "@/lib/api";
 import { mapSeverity, mapUrgency } from "@/lib/api";
+import { Sun, Target, Ruler, Ban, Leaf, Smartphone } from "lucide-react";
 
 type Stage = "upload" | "loading" | "results";
 interface ChatMsg { role: "bot" | "user"; text: string; }
@@ -268,29 +269,30 @@ export function DiagnoseView() {
             </Card>
 
             {/* Photo tips */}
-            <Card className="p-5">
-              <h3 className="font-semibold text-sm text-gray-800 mb-3">
-                📷 Photo Tips for Best Results
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {[
-                  "☀️ Use natural daylight for clearest colors",
-                  "🎯 Focus directly on the diseased area",
-                  "📏 Keep 20–30 cm from the plant",
-                  "🚫 Avoid blurry or dark images",
-                  "🍃 Make sure the leaf fills most of the frame",
-                  "📐 Hold the phone flat and steady",
-                ].map((tip) => (
-                  <div
-                    key={tip}
-                    className="text-sm text-gray-600 p-3 bg-gray-50 rounded-xl border-l-[3px] border-green-400"
-                  >
-                    {tip}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </motion.div>
+<Card className="p-5">
+  <div className="flex items-center gap-2 mb-4">
+    <Camera size={16} className="text-green-600" />
+    <h3 className="font-semibold text-sm text-gray-800">Photo Tips for Best Results</h3>
+  </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+    {[
+      { icon: <Sun size={14} className="text-amber-500" />,        bg: "bg-amber-50",  text: "Use natural daylight for clearest colors" },
+      { icon: <Target size={14} className="text-green-600" />,     bg: "bg-green-50",  text: "Focus directly on the diseased area" },
+      { icon: <Ruler size={14} className="text-blue-500" />,       bg: "bg-blue-50",   text: "Keep 20–30 cm from the plant" },
+      { icon: <Ban size={14} className="text-red-500" />,          bg: "bg-red-50",    text: "Avoid blurry or dark images" },
+      { icon: <Leaf size={14} className="text-green-600" />,       bg: "bg-green-50",  text: "Make sure the leaf fills the frame" },
+      { icon: <Smartphone size={14} className="text-purple-500" />, bg: "bg-purple-50", text: "Hold the phone flat and steady" },
+    ].map(({ icon, bg, text }) => (
+      <div key={text} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+        <div className={`w-7 h-7 ${bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+          {icon}
+        </div>
+        <span className="text-sm text-gray-600">{text}</span>
+      </div>
+    ))}
+  </div>
+</Card>
+</motion.div>
         )}
 
         {/* ══════════════ LOADING STAGE ══════════════ */}
