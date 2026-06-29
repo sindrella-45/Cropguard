@@ -227,11 +227,21 @@ export const diagnoseApi = {
 // ── History API ───────────────────────────────────────────────────────────────
 export const historyApi = {
   async getAll(): Promise<HistoryItem[]> {
-    const res = await fetch(`${BASE_URL}/history`, {
-      headers: authHeaders(),
-    });
-    return handleResponse<HistoryItem[]>(res);
-  },
+  const res = await fetch(`${BASE_URL}/history`, {
+    headers: authHeaders(),
+  });
+
+  const data = await handleResponse<HistoryResponse>(res);
+  return data.diagnoses.map((d) => ({
+    id: d.id,
+    plant_identified: d.plant_identified,
+    diagnosis_name: d.disease_name,
+    severity: d.severity,
+    confidence_score: d.confidence_score,
+    created_at: d.created_at,
+    urgency: d.urgency,
+  }));
+},
 
   async getById(diagnosis_id: string): Promise<AnalyzeResponse> {
     const res = await fetch(`${BASE_URL}/history/${diagnosis_id}`, {
