@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 
 const links = [
   { label: "Home",         href: "#" },
@@ -32,19 +33,24 @@ export function PublicNav() {
         <div className="max-w-7xl mx-auto px-6 md:px-10 py-3.5 flex items-center justify-between">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-9 h-9 bg-green-600 rounded-lg flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3C8 3 4 7 4 12C4 17 8 21 12 21C16 21 20 17 20 12C20 7 16 3 12 3Z" fill="white" fillOpacity="0.3"/>
-                <path d="M7 12C9 7 15 7 17 12" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
-                <circle cx="12" cy="13" r="2.5" fill="white"/>
-              </svg>
-            </div>
-            <div>
-              <div className="font-bold text-gray-900 text-sm leading-tight">CropGuard AI</div>
-              <div className="text-gray-400 text-[10px] leading-tight">Smart Crop Protection</div>
-            </div>
-          </Link>
+          <Link href="/" className="flex items-center gap-3 no-underline">
+            <Image
+              src="/cropguard-logo.png"
+              alt="CropGuard AI Logo"
+              width={40}
+              height={40}
+              className="rounded-lg"
+            />
+
+        <div>
+      <div className="font-bold text-gray-900 text-sm leading-tight">
+      CropGuard AI
+    </div>
+    <div className="text-gray-400 text-[10px] leading-tight">
+      Smart Crop Protection
+      </div>
+      </div>
+     </Link>
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-7">

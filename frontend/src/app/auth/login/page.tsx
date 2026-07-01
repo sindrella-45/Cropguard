@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAppStore } from "@/lib/store";
 import { authApi } from "@/lib/api";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -129,18 +130,20 @@ export default function LoginPage() {
         <div className="absolute inset-0 opacity-[0.08]"
           style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
         <div className="relative z-10">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-9 h-9 rounded-[10px] bg-white/20 border border-white/30 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2" />
-                <circle cx="12" cy="8" r="1.5" fill="white" />
-              </svg>
-            </div>
-            <span className="font-heading font-bold text-lg text-white">
-              CropGuard<span className="text-green-300"> AI</span>
-            </span>
-          </Link>
-        </div>
+          <Link href="/" className="flex items-center gap-3 no-underline">
+  <Image
+    src="/cropguard-logo.png"
+    alt="CropGuard AI"
+    width={48}
+    height={48}
+    priority
+  />
+
+  <span className="font-heading font-bold text-xl text-white">
+    CropGuard <span className="text-green-300">AI</span>
+  </span>
+</Link>
+</div>
         <div className="relative z-10 mt-12">
           <h2 className="font-heading font-bold text-4xl text-white leading-snug mb-4">
             Smart farming starts with smart diagnosis.
