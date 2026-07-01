@@ -234,7 +234,7 @@ export function GuidesView() {
                   alt={g.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/images/crop-default.jpg";
+                    (e.target as HTMLImageElement).src = "/images/crop-maize.jpg";
                   }}
                 />
                 {/* Gradient overlay at bottom for category badge */}
@@ -322,7 +322,7 @@ export function GuidesView() {
                   alt={selectedGuide.title}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/images/crop-default.jpg";
+                    (e.target as HTMLImageElement).src = "/images/crop-maize.jpg";
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
