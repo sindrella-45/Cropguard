@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { t } from "@/lib/i18n";
+import Image from "next/image";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
@@ -53,11 +54,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
-      <Link href="/dashboard" className="flex items-center gap-2.5 px-2 mb-6 no-underline" onClick={() => setSidebarOpen(false)}>
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center flex-shrink-0">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2" /><circle cx="12" cy="8" r="1.5" fill="white" /></svg>
-        </div>
-        <span className="font-heading font-bold text-sm text-gray-900">CropGuard<span className="text-green-600"> AI</span></span>
+      <Link
+        href="/dashboard"
+        className="flex items-center px-2 mb-6 no-underline"
+        onClick={() => setSidebarOpen(false)}
+      >
+        <Image
+          src="/cropguard-logo.png"
+          alt="CropGuard AI"
+          width={180}
+          height={60}
+          priority
+          className="h-12 w-auto"
+        />
       </Link>
 
       <nav className="flex flex-col gap-0.5 flex-1">
